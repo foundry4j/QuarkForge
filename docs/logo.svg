@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 152 195" role="img" aria-labelledby="qf-title">
+    <title id="qf-title">QuarkForge</title>
+    <defs>
+        <linearGradient id="qf-heat" x1="0" y1="0" x2="0" y2="195" gradientUnits="userSpaceOnUse">
+            <stop offset="0.74" stop-color="#4695EB"/>
+            <stop offset="0.79" stop-color="#FF8A00"/>
+            <stop offset="1" stop-color="#FF5C00"/>
+        </linearGradient>
+    </defs>
+    <g transform="translate(-267 -8)">
+        <path fill="url(#qf-heat)" d="M404,89.39q0,25.9-10.49,43.07a52.31,52.31,0,0,1-29.61,23.24l32.3,33.39H373.29l-26.45-30.44-5.11.19q-30,0-46.27-18.22T279.17,89.2q0-32.93,16.34-51.05T341.92,20q29.24,0,45.66,18.45T404,89.39Zm-108.14,0q0,27.39,11.74,41.55t34.11,14.15q22.56,0,34.07-14.11t11.51-41.59q0-27.21-11.47-41.27T341.92,34.05q-22.56,0-34.3,14.16T295.88,89.39Z"/>
+    </g>
+</svg>
