@@ -19,6 +19,7 @@ public enum CommonErrorCode implements ErrorCode {
     UNAUTHORIZED(40100, "未登录或登录已过期"),
     FORBIDDEN(40300, "没有访问权限"),
     NOT_FOUND(40400, "请求的资源不存在"),
+    CONFLICT(40900, "相同请求正在处理中，请稍后重试"),
     TOO_MANY_REQUESTS(42900, "请求过于频繁，请稍后重试"),
     INTERNAL_ERROR(50000, "服务内部错误"),
     SERVICE_UNAVAILABLE(50300, "服务暂不可用");

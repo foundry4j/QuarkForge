@@ -22,7 +22,8 @@
 | `quarkforge-data` | 数据访问 | `BaseEntity`（雪花 ID + 审计时间戳）、`BaseRepository`（分页直达 `PageResult`） |
 | `quarkforge-security` | 安全认证 | `JwtTokenService` 令牌签发、`AuthContext` 当前用户解析、`LoginUser` |
 | `quarkforge-ratelimit` | 限流 | `@RateLimit` 注解、内存固定窗口默认实现、`RateLimiter` SPI |
-| `quarkforge-redis` | Redis 集成 | `RedisCacheService` 旁路缓存、`RedisLockService` 分布式锁、Redis 限流后端（自动接管） |
+| `quarkforge-idempotency` | 幂等 | `@Idempotent` 注解、表达式幂等键、结果缓存回放、`IdempotentStore` SPI（内存默认 / Redis 自动接管） |
+| `quarkforge-redis` | Redis 集成 | `RedisCacheService` 旁路缓存、`RedisLockService` 分布式锁、Redis 限流与幂等后端（自动接管） |
 | `quarkforge-observability` | 可观测性 | OpenAPI/Swagger UI（内置 bearerAuth 方案）、`/q/health` 健康检查、`/q/metrics` Prometheus 指标 |
 
 模块按需引入，互不强绑；`core` 不依赖任何 Quarkus 扩展，可单独用于非 Web 场景。
@@ -130,6 +131,21 @@ public Result<Void> sendSmsCode() { ... }
 ```
 
 支持 `USER` / `IP` / `GLOBAL` 三种维度，超额返回 HTTP 429。默认内存实现适合单机；引入 `quarkforge-redis` 后自动切换为 Redis 分布式限流。
+
+### 幂等（idempotency）
+
+```java
+@POST
+@Idempotent(key = "order:#req.orderNo", ttlSeconds = 600)
+public Result<OrderVO> createOrder(@RequestBody CreateOrderRequest req) {
+    // 相同 orderNo 的重复请求：
+    // - 首次执行业务方法并缓存返回值 600 秒
+    // - 缓存期内直接回放首次结果，不重复执行
+    // - 并发同键请求返回 HTTP 409（CONFLICT）
+}
+```
+
+`key` 支持 `#参数名` 与 `#p0` 索引，并可链式 `.字段`；留空时按参数序列化内容生成键。默认内存存储适合单机，引入 `quarkforge-redis` 后自动切换为分布式实现。业务方法抛异常会立即释放幂等键，允许后续重试。
 
 ### Redis（redis）
 

@@ -21,6 +21,10 @@
             <artifactId>quarkforge-ratelimit</artifactId>
         </dependency>
         <dependency>
+            <groupId>io.github.tuyucheng777</groupId>
+            <artifactId>quarkforge-idempotency</artifactId>
+        </dependency>
+        <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-redis-client</artifactId>
         </dependency>
