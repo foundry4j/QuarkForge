@@ -18,6 +18,9 @@
         <module>quarkforge-redis</module>
         <module>quarkforge-ratelimit</module>
         <module>quarkforge-idempotency</module>
+        <module>quarkforge-messaging</module>
+        <module>quarkforge-messaging-rabbitmq</module>
+        <module>quarkforge-outbox</module>
         <module>quarkforge-observability</module>
         <module>examples/user-service</module>
     </modules>
@@ -82,6 +85,21 @@
             <dependency>
                 <groupId>io.github.tuyucheng777</groupId>
                 <artifactId>quarkforge-idempotency</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.github.tuyucheng777</groupId>
+                <artifactId>quarkforge-messaging</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.github.tuyucheng777</groupId>
+                <artifactId>quarkforge-messaging-rabbitmq</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.github.tuyucheng777</groupId>
+                <artifactId>quarkforge-outbox</artifactId>
                 <version>${project.version}</version>
             </dependency>
         </dependencies>

@@ -23,6 +23,9 @@
 | `quarkforge-security` | 安全认证 | `JwtTokenService` 令牌签发、`AuthContext` 当前用户解析、`LoginUser` |
 | `quarkforge-ratelimit` | 限流 | `@RateLimit` 注解、内存固定窗口默认实现、`RateLimiter` SPI |
 | `quarkforge-idempotency` | 幂等 | `@Idempotent` 注解、表达式幂等键、结果缓存回放、`IdempotentStore` SPI（内存默认 / Redis 自动接管） |
+| `quarkforge-messaging` | 消息发布 | `MessageEnvelope` 消息信封、`MessagePublisher` SPI、`JsonMessagePublisher` 对象直发（本机默认实现） |
+| `quarkforge-messaging-rabbitmq` | RabbitMQ | 交换机声明、routing key 投递、持久化消息、可选 publisher confirms |
+| `quarkforge-outbox` | 事务发件箱 | 本地消息表、延迟投递、失败指数退避重试、定时补投 |
 | `quarkforge-redis` | Redis 集成 | `RedisCacheService` 旁路缓存、`RedisLockService` 分布式锁、Redis 限流与幂等后端（自动接管） |
 | `quarkforge-observability` | 可观测性 | OpenAPI/Swagger UI（内置 bearerAuth 方案）、`/q/health` 健康检查、`/q/metrics` Prometheus 指标 |
 
@@ -147,6 +150,46 @@ public Result<OrderVO> createOrder(@RequestBody CreateOrderRequest req) {
 
 `key` 支持 `#参数名` 与 `#p0` 索引，并可链式 `.字段`；留空时按参数序列化内容生成键。默认内存存储适合单机，引入 `quarkforge-redis` 后自动切换为分布式实现。业务方法抛异常会立即释放幂等键，允许后续重试。
 
+### 消息（messaging + RabbitMQ）
+
+默认不依赖中间件：消息只写入内存并记录日志（`LocalMessagePublisher`），本地开发可直接跑通；引入 `quarkforge-messaging-rabbitmq` 后自动切换为真实投递。
+
+```properties
+quarkforge.messaging.rabbitmq.uri=amqp://guest:guest@localhost:5672/
+quarkforge.messaging.rabbitmq.exchange=quarkforge.topic
+quarkforge.messaging.rabbitmq.exchange-type=topic
+quarkforge.messaging.rabbitmq.publisher-confirms=true
+```
+
+```java
+@Inject JsonMessagePublisher publisher;
+
+publisher.publish("order.created", Map.of("orderNo", orderNo));
+```
+
+`destination` 作为 routing key；`exchange` 留空则投递到默认交换机（此时 `destination` 就是队列名）。消费端可直接使用 Quarkus 原生 `@Incoming` 或 RabbitMQ 客户端。
+
+### 事务发件箱（outbox）
+
+业务写库与消息发送放在同一个事务，避免「订单已落库、消息没发出去」：
+
+```java
+@Transactional
+public void createOrder(CreateOrderRequest request) {
+    orderRepository.persist(order);
+    outbox.enqueue("order.created", new OrderCreatedEvent(order.id, order.no));
+}
+```
+
+延迟投递与失败重试：
+
+```java
+// 30 分钟后触发关单检查
+outbox.enqueue("order.close-check", Map.of("orderNo", orderNo), Duration.ofMinutes(30));
+```
+
+后台每 5 秒扫描本地消息表补投；投递失败按 `30s → 60s → 120s …` 指数退避，超过 5 次标记 `FAILED`。多实例部署时通过条件更新抢占消息，同一条消息只会被一个实例投递。普通定时任务可直接使用 Quarkus `@Scheduled`。
+
 ### Redis（redis）
 
 ```java
@@ -205,3 +248,7 @@ mvn -pl examples/user-service quarkus:dev
 | `quarkforge.data.worker-id` | `0` | 雪花 ID 节点号（[0, 1023]） |
 | `quarkforge.jwt.issuer` | `quarkforge` | JWT 签发方 |
 | `quarkforge.jwt.ttl-minutes` | `120` | JWT 有效期（分钟） |
+| `quarkforge.outbox.enabled` | `true` | 发件箱后台投递开关 |
+| `quarkforge.outbox.dispatch-interval` | `5s` | 发件箱扫描间隔 |
+| `quarkforge.outbox.max-attempts` | `5` | 单条消息最大投递次数 |
+| `quarkforge.outbox.backoff-seconds` | `30` | 首次失败退避秒数（之后指数翻倍） |

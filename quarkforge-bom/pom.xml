@@ -61,6 +61,21 @@
                 <artifactId>quarkforge-idempotency</artifactId>
                 <version>${project.version}</version>
             </dependency>
+            <dependency>
+                <groupId>io.github.tuyucheng777</groupId>
+                <artifactId>quarkforge-messaging</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.github.tuyucheng777</groupId>
+                <artifactId>quarkforge-messaging-rabbitmq</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.github.tuyucheng777</groupId>
+                <artifactId>quarkforge-outbox</artifactId>
+                <version>${project.version}</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 </project>
