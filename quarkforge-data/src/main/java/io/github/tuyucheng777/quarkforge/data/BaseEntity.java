@@ -3,6 +3,7 @@ package io.github.tuyucheng777.quarkforge.data;
 import java.time.Instant;
 
 import jakarta.persistence.Column;
+import jakarta.persistence.EntityListeners;
 import jakarta.persistence.Id;
 import jakarta.persistence.MappedSuperclass;
 import jakarta.persistence.PrePersist;
@@ -15,6 +16,7 @@ import io.quarkus.hibernate.orm.panache.PanacheEntityBase;
 ///
 /// - `id`：雪花 ID，首次持久化时自动赋值（节点 ID 由 `quarkforge.data.worker-id` 配置）
 /// - `createdAt` / `updatedAt`：审计时间戳，由 JPA 生命周期回调自动维护
+/// - 自动审计：引入 `quarkforge-audit` 后，实体的新增/更新/删除会自动记录字段级变更
 ///
 /// 子类直接继承即可获得 CRUD 能力：
 ///
@@ -29,6 +31,7 @@ import io.quarkus.hibernate.orm.panache.PanacheEntityBase;
 /// }
 /// ```
 @MappedSuperclass
+@EntityListeners(AuditEntityListener.class)
 public abstract class BaseEntity extends PanacheEntityBase {
 
     @Id
