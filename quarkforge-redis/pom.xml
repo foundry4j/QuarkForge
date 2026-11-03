@@ -9,12 +9,16 @@
     </parent>
     <artifactId>quarkforge-redis</artifactId>
     <name>QuarkForge :: Redis</name>
-    <description>Redis cache-aside helpers, distributed lock and redis rate limiter backend</description>
+    <description>Redis cache-aside helpers, two-level cache, distributed lock and redis rate limiter backend</description>
 
     <dependencies>
         <dependency>
             <groupId>io.github.tuyucheng777</groupId>
             <artifactId>quarkforge-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.github.tuyucheng777</groupId>
+            <artifactId>quarkforge-cache</artifactId>
         </dependency>
         <dependency>
             <groupId>io.github.tuyucheng777</groupId>
@@ -31,6 +35,11 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-jackson</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-junit-mockito</artifactId>
+            <scope>test</scope>
         </dependency>
     </dependencies>
 </project>
