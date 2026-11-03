@@ -18,7 +18,7 @@
 |------|------|----------|
 | `quarkforge-bom` | 版本对齐 | 一次 import 锁定 Quarkus 平台与全部框架模块版本 |
 | `quarkforge-core` | 基础设施（纯 JDK，无框架依赖） | `Result` 统一响应体、`ErrorCode` 错误码、`BizException`、`PageResult`、`Checks` 校验、`SnowflakeIdGenerator` |
-| `quarkforge-web` | Web 层 | 全局异常映射、响应体自动包装、`@RawResponse` 豁免、访问日志与 traceId、`PageQuery` 分页参数 |
+| `quarkforge-web` | Web 层 | 全局异常映射、响应体自动包装、`@RawResponse` 豁免、访问日志与 traceId、`PageQuery` 分页参数、文件上传下载、API 版本管理 |
 | `quarkforge-data` | 数据访问 | `BaseEntity`（雪花 ID + 审计时间戳）、`BaseRepository`（分页直达 `PageResult`）、`TenantEntity` 多租户自动过滤、`SoftDeleteEntity`/`SoftDeleteRepository` 软删除与回收站、`AuditSupport` 审计 SPI |
 | `quarkforge-audit` | 审计日志 | 自动记录新增/更新/删除，更新时输出字段级差异（如价格 100 → 120），`AuditLog` 落库、操作人解析 |
 | `quarkforge-crypto` | 加密与脱敏 | AES-256-GCM `CryptoService`、`EncryptedStringConverter` 字段加密、`@Sensitive` 接口返回脱敏（`138****0000`） |
@@ -90,6 +90,70 @@ public class UserResource {
 - 业务代码抛出 `BizException(CommonErrorCode.NOT_FOUND)` 即得到 `404 {"code":40400,...}` 响应。
 - 参数校验（`@NotBlank`、`@Valid`）失败自动汇总为 400 响应。
 - 每个请求自动生成 `traceId` 写入日志 MDC 与 `X-Trace-Id` 响应头。
+
+### 文件上传下载（web）
+
+`FileStorage` 是存储 SPI，默认实现落本地磁盘（按 `yyyy/MM/dd` 分目录，文件名重写为 UUID，杜绝路径穿越）。
+
+```java
+@Inject FileStorage storage;
+
+// multipart 上传
+@POST
+@Consumes(MediaType.MULTIPART_FORM_DATA)
+public StoredFile upload(@RestForm FileUpload file) {
+    return FileUploads.store(storage, file);
+}
+
+// 流式下载，中文文件名按 RFC 5987 编码，浏览器可正确显示
+@GET
+@Path("/{id}/content")
+public Response download(@RestPath Long id) {
+    FileRecord record = repository.requireById(id);
+    return FileDownloads.download(storage, record.key(), record.filename(), record.contentType());
+}
+```
+
+内置防护：超出大小上限抛 `413 {"code":41300}`，MIME 类型不在白名单抛 `415 {"code":41500}`，非法存储键抛 400；写入失败会自动清理半成品文件。
+
+```properties
+quarkforge.web.file.base-dir=${java.io.tmpdir}/quarkforge-files
+quarkforge.web.file.max-size=10M
+quarkforge.web.file.allowed-content-types=image/png,application/pdf   # 留空表示不限制
+```
+
+接入对象存储时实现 `FileStorage` 并注册为普通 Bean 即可覆盖默认实现。
+
+### API 版本管理（web）
+
+用 `@ApiVersion` 声明接口支持的版本，调用方通过 `X-API-Version` 请求头（或 URL 首段 `/v1/...`）指定：
+
+```java
+@Path("/orders")
+@ApiVersion("v1")
+public class OrderResource {
+
+    @GET
+    public PageResult<OrderVO> list() { ... }
+
+    @GET
+    @Path("/legacy")
+    @ApiVersion(value = "v1", deprecated = true, sunset = "2027-01-01", successor = "/v2/orders")
+    public List<OrderVO> legacyList() { ... }
+}
+```
+
+- 请求版本不在支持列表内 → `400 {"code":40001,...}`
+- 响应固定回写 `X-API-Version`
+- 废弃接口额外返回 `Deprecation: true`、`Sunset: 2027-01-01`、`Link: </v2/orders>; rel="successor-version"`
+- 未标注 `@ApiVersion` 的接口不做校验，向后兼容；版本号 `1` 与 `v1` 等价
+
+版本号通过过滤器解析后可注入 `ApiVersionContext` 读取：
+
+```java
+@Inject ApiVersionContext versionContext;
+String version = versionContext.requested();
+```
 
 ### 数据访问（data）
 
@@ -377,6 +441,11 @@ mvn -pl examples/user-service quarkus:dev
 |------|--------|------|
 | `quarkforge.web.response.auto-wrap` | `true` | 响应体自动包装开关 |
 | `quarkforge.web.access-log.enabled` | `true` | 访问日志开关 |
+| `quarkforge.web.file.base-dir` | `${java.io.tmpdir}/quarkforge-files` | 文件存储根目录 |
+| `quarkforge.web.file.max-size` | `10M` | 单文件大小上限，超出返回 413 |
+| `quarkforge.web.file.allowed-content-types` | 空（不限制） | 允许上传的 MIME 类型，逗号分隔 |
+| `quarkforge.web.version.enabled` | `true` | API 版本处理开关 |
+| `quarkforge.web.version.default` | `v1` | 未指定版本时使用的默认版本 |
 | `quarkforge.data.worker-id` | `0` | 雪花 ID 节点号（[0, 1023]） |
 | `quarkforge.data.tenant.default` | `default` | 未显式设置租户时使用的租户 ID |
 | `quarkforge.audit.enabled` | `true` | 审计日志落库开关 |

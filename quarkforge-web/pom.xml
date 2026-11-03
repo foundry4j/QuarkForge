@@ -9,7 +9,7 @@
     </parent>
     <artifactId>quarkforge-web</artifactId>
     <name>QuarkForge :: Web</name>
-    <description>Unified exception mapping, result wrapping, access log and pagination</description>
+    <description>Unified exception mapping, result wrapping, access log, pagination, file upload/download and API versioning</description>
 
     <dependencies>
         <dependency>
@@ -27,6 +27,11 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-hibernate-validator</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.rest-assured</groupId>
+            <artifactId>rest-assured</artifactId>
+            <scope>test</scope>
         </dependency>
     </dependencies>
 </project>
