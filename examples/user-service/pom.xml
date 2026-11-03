@@ -3,7 +3,7 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
-        <groupId>io.github.tuyucheng777</groupId>
+        <groupId>io.github.foundry4j</groupId>
         <artifactId>quarkforge-parent</artifactId>
         <version>1.0.0</version>
         <relativePath>../../pom.xml</relativePath>
@@ -14,23 +14,23 @@
 
     <dependencies>
         <dependency>
-            <groupId>io.github.tuyucheng777</groupId>
+            <groupId>io.github.foundry4j</groupId>
             <artifactId>quarkforge-web</artifactId>
         </dependency>
         <dependency>
-            <groupId>io.github.tuyucheng777</groupId>
+            <groupId>io.github.foundry4j</groupId>
             <artifactId>quarkforge-data</artifactId>
         </dependency>
         <dependency>
-            <groupId>io.github.tuyucheng777</groupId>
+            <groupId>io.github.foundry4j</groupId>
             <artifactId>quarkforge-security</artifactId>
         </dependency>
         <dependency>
-            <groupId>io.github.tuyucheng777</groupId>
+            <groupId>io.github.foundry4j</groupId>
             <artifactId>quarkforge-ratelimit</artifactId>
         </dependency>
         <dependency>
-            <groupId>io.github.tuyucheng777</groupId>
+            <groupId>io.github.foundry4j</groupId>
             <artifactId>quarkforge-observability</artifactId>
         </dependency>
         <dependency>

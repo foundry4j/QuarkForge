@@ -3,25 +3,27 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
-        <groupId>io.github.tuyucheng777</groupId>
+        <groupId>io.github.foundry4j</groupId>
         <artifactId>quarkforge-parent</artifactId>
         <version>1.0.0</version>
     </parent>
     <artifactId>quarkforge-outbox</artifactId>
     <name>QuarkForge :: Outbox</name>
-    <description>Transactional outbox: local message table, delayed delivery, retry with backoff and scheduled dispatch</description>
+    <description>Transactional outbox: local message table, delayed delivery, retry with backoff and scheduled
+        dispatch
+    </description>
 
     <dependencies>
         <dependency>
-            <groupId>io.github.tuyucheng777</groupId>
+            <groupId>io.github.foundry4j</groupId>
             <artifactId>quarkforge-core</artifactId>
         </dependency>
         <dependency>
-            <groupId>io.github.tuyucheng777</groupId>
+            <groupId>io.github.foundry4j</groupId>
             <artifactId>quarkforge-data</artifactId>
         </dependency>
         <dependency>
-            <groupId>io.github.tuyucheng777</groupId>
+            <groupId>io.github.foundry4j</groupId>
             <artifactId>quarkforge-messaging</artifactId>
         </dependency>
         <dependency>
