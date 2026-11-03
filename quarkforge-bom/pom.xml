@@ -96,6 +96,11 @@
                 <artifactId>quarkforge-outbox</artifactId>
                 <version>${project.version}</version>
             </dependency>
+            <dependency>
+                <groupId>io.github.tuyucheng777</groupId>
+                <artifactId>quarkforge-scheduler</artifactId>
+                <version>${project.version}</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 </project>

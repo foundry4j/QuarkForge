@@ -25,6 +25,7 @@
         <module>quarkforge-messaging</module>
         <module>quarkforge-messaging-rabbitmq</module>
         <module>quarkforge-outbox</module>
+        <module>quarkforge-scheduler</module>
         <module>quarkforge-observability</module>
         <module>examples/user-service</module>
     </modules>
@@ -124,6 +125,11 @@
             <dependency>
                 <groupId>io.github.tuyucheng777</groupId>
                 <artifactId>quarkforge-outbox</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.github.tuyucheng777</groupId>
+                <artifactId>quarkforge-scheduler</artifactId>
                 <version>${project.version}</version>
             </dependency>
         </dependencies>

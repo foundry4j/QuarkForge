@@ -30,6 +30,7 @@
 | `quarkforge-messaging` | 消息发布 | `MessageEnvelope` 消息信封、`MessagePublisher` SPI、`JsonMessagePublisher` 对象直发（本机默认实现） |
 | `quarkforge-messaging-rabbitmq` | RabbitMQ | 交换机声明、routing key 投递、持久化消息、可选 publisher confirms |
 | `quarkforge-outbox` | 事务发件箱 | 本地消息表、延迟投递、失败指数退避重试、定时补投 |
+| `quarkforge-scheduler` | 任务调度 | JobRunr 集成，支持本地内存存储（单机）和 SQL 存储（分布式），内置 Dashboard |
 | `quarkforge-redis` | Redis 集成 | `RedisCacheService` 旁路缓存、`RedisTwoLevelCacheService` 本地 + Redis 两级缓存、`RedisLockService` 分布式锁、Redis 限流与幂等后端（自动接管） |
 | `quarkforge-observability` | 可观测性 | OpenAPI/Swagger UI（内置 bearerAuth 方案）、`/q/health` 健康检查、`/q/metrics` Prometheus 指标 |
 
@@ -174,6 +175,55 @@ src/main/resources/db/migration/
 ```
 
 默认 `migrate-at-start=true`、`baseline-on-migrate=true`，可在业务的 `application.properties` 中覆盖。
+
+### 任务调度（scheduler）
+
+基于 JobRunr 9（原生支持 Quarkus 3.40 LTS），本地零配置就能跑，加数据库即自动成为分布式调度。
+
+```java
+@Inject SchedulerService scheduler;
+
+// 立即执行（静态方法引用匹配 JobLambda，可被 JobRunr 序列化）
+scheduler.enqueue(TicketService::processDailyReports);
+
+// 延迟到指定时间点执行一次
+scheduler.scheduleAt(Instant.now().plus(Duration.ofMinutes(30)),
+        OrderService::sendClosingReminder);
+
+// 标准 6 段 cron 周期执行
+scheduler.scheduleCron("0 0 2 * * *", BillingService::runNightlySettlement);
+scheduler.scheduleCron("0 0/5 * * * *", "refresh-metrics", MetricsService::refreshCaches);
+
+// 固定间隔周期执行（JobRunr 不区分 fixed-delay / fixed-rate）
+scheduler.scheduleRecurrently(Duration.ofSeconds(30), Heartbeat::send);
+```
+
+**本地 vs 分布式的自动切换**：
+
+- **单机模式（默认）**：没有 DataSource 时，[StorageProviderProducer](quarkforge-scheduler/src/main/java/io/github/tuyucheng777/quarkforge/scheduler/StorageProviderProducer.java) 提供的 `@DefaultBean InMemoryStorageProvider` 生效，BackgroundJobServer 在同一个 JVM 里轮询执行任务。适合开发和单节点部署。
+
+- **分布式模式**：引入 H2 / Postgres / MySQL 任何一个 DataSource 后，JobRunr Quarkus 扩展自动检测并注册 `SqlStorageProvider`，所有节点共享同一张 `jobrunr_*` 表，通过乐观锁互斥执行——**多节点部署时同一任务只会被一个节点执行一次**。这也是 JobRunr 的核心优势，比自建 Redis 锁或 Quartz 集群表更轻量。
+
+**常用配置**（`quarkus.jobrunr.*` 前缀，可在业务 application.properties 覆盖）：
+
+```properties
+# 后台任务处理服务器默认开启，可改 poll-interval 调整轮询频率
+quarkus.jobrunr.background-job-server.poll-interval=5   # 秒（生产建议 15-30）
+
+# 失败重试与任务保留
+quarkus.jobrunr.jobs.default-number-of-retries=3
+quarkus.jobrunr.jobs.delete-succeeded-jobs-after=36h
+quarkus.jobrunr.jobs.permanently-delete-deleted-jobs-after=72h
+
+# Dashboard 默认关闭，生产需显式开启并加鉴权
+quarkus.jobrunr.dashboard.enabled=false
+quarkus.jobrunr.dashboard.port=8000
+```
+
+> 调用方法引用或 lambda 时请确保目标**可被 JobRunr 序列化**：
+> - 静态方法引用（如 `MyService::myStaticMethod`）✅ 最安全，后台 runner 直接反射调用
+> - 实例方法引用（如 `myBean::doWork`）需要通过 ArC 找到 CDI bean 实例，确保该 bean 已注册
+> - lambda 表达式会捕获所在类的引用，反序列化需要该类在 classpath 内
 
 ### 缓存（cache / redis）
 
