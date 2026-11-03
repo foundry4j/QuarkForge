@@ -14,6 +14,10 @@
         <module>quarkforge-core</module>
         <module>quarkforge-web</module>
         <module>quarkforge-data</module>
+        <module>quarkforge-audit</module>
+        <module>quarkforge-crypto</module>
+        <module>quarkforge-cache</module>
+        <module>quarkforge-migration</module>
         <module>quarkforge-security</module>
         <module>quarkforge-redis</module>
         <module>quarkforge-ratelimit</module>
@@ -60,6 +64,26 @@
             <dependency>
                 <groupId>io.github.tuyucheng777</groupId>
                 <artifactId>quarkforge-data</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.github.tuyucheng777</groupId>
+                <artifactId>quarkforge-audit</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.github.tuyucheng777</groupId>
+                <artifactId>quarkforge-crypto</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.github.tuyucheng777</groupId>
+                <artifactId>quarkforge-cache</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.github.tuyucheng777</groupId>
+                <artifactId>quarkforge-migration</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>

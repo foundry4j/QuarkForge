@@ -38,6 +38,26 @@
             </dependency>
             <dependency>
                 <groupId>io.github.tuyucheng777</groupId>
+                <artifactId>quarkforge-audit</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.github.tuyucheng777</groupId>
+                <artifactId>quarkforge-crypto</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.github.tuyucheng777</groupId>
+                <artifactId>quarkforge-cache</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.github.tuyucheng777</groupId>
+                <artifactId>quarkforge-migration</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.github.tuyucheng777</groupId>
                 <artifactId>quarkforge-security</artifactId>
                 <version>${project.version}</version>
             </dependency>
