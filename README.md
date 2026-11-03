@@ -8,36 +8,36 @@
   <img src="https://img.shields.io/badge/Maven-3.9+-red" alt="Maven 3.9+">
 </p>
 
-基于 Quarkus 的模块化快速微服务开发框架，内置统一响应、异常处理、数据访问、安全认证、限流、Redis 与可观测性等日常开发基础能力。
+A modular rapid microservice development framework based on Quarkus, with built-in everyday development fundamentals such as unified responses, exception handling, data access, security authentication, rate limiting, Redis, and observability.
 
-## 模块结构
+## Module Structure
 
-| 模块 | 职责 | 核心内容 |
-|------|------|----------|
-| `quarkforge-bom` | 版本对齐 | 一次 import 锁定 Quarkus 平台与全部框架模块版本 |
-| `quarkforge-core` | 基础设施（纯 JDK，无框架依赖） | `Result` 统一响应体、`ErrorCode` 错误码、`BizException`、`PageResult`、`Checks` 校验、`SnowflakeIdGenerator` |
-| `quarkforge-web` | Web 层 | 全局异常映射、响应体自动包装、`@RawResponse` 豁免、访问日志与 traceId、`PageQuery` 分页参数、文件上传下载、API 版本管理 |
-| `quarkforge-validation` | 参数校验 | 业务常用 Bean Validation 注解：`@Phone`、`@IdCard`、`@BankCard`、`@PasswordStrength`、`@EnumValid` |
-| `quarkforge-data` | 数据访问 | `BaseEntity`（雪花 ID + 审计时间戳）、`BaseRepository`（分页直达 `PageResult`）、`TenantEntity` 多租户自动过滤、`SoftDeleteEntity`/`SoftDeleteRepository` 软删除与回收站、`AuditSupport` 审计 SPI |
-| `quarkforge-audit` | 审计日志 | 自动记录新增/更新/删除，更新时输出字段级差异（如价格 100 → 120），`AuditLog` 落库、操作人解析 |
-| `quarkforge-crypto` | 加密与脱敏 | AES-256-GCM `CryptoService`、`EncryptedStringConverter` 字段加密、`@Sensitive` 接口返回脱敏（`138****0000`） |
-| `quarkforge-cache` | 本地缓存 | `CacheService` SPI、Caffeine 默认实现（按条目 TTL、容量上限） |
-| `quarkforge-migration` | 数据库迁移 | Flyway starter，应用启动时自动执行 `db/migration` 下的版本化脚本 |
-| `quarkforge-security` | 安全认证 | `JwtTokenService` 令牌签发、`AuthContext` 当前用户解析、`LoginUser` |
-| `quarkforge-ratelimit` | 限流 | `@RateLimit` 注解、内存固定窗口默认实现、`RateLimiter` SPI |
-| `quarkforge-idempotency` | 幂等 | `@Idempotent` 注解、表达式幂等键、结果缓存回放、`IdempotentStore` SPI（内存默认 / Redis 自动接管） |
-| `quarkforge-messaging` | 消息发布 | `MessageEnvelope` 消息信封、`MessagePublisher` SPI、`JsonMessagePublisher` 对象直发（本机默认实现） |
-| `quarkforge-messaging-rabbitmq` | RabbitMQ | 交换机声明、routing key 投递、持久化消息、可选 publisher confirms |
-| `quarkforge-outbox` | 事务发件箱 | 本地消息表、延迟投递、失败指数退避重试、定时补投 |
-| `quarkforge-scheduler` | 任务调度 | JobRunr 集成，支持本地内存存储（单机）和 SQL 存储（分布式），内置 Dashboard |
-| `quarkforge-redis` | Redis 集成 | `RedisCacheService` 旁路缓存、`RedisTwoLevelCacheService` 本地 + Redis 两级缓存、`RedisLockService` 分布式锁、Redis 限流与幂等后端（自动接管） |
-| `quarkforge-observability` | 可观测性 | OpenAPI/Swagger UI（内置 bearerAuth 方案）、`/q/health` 健康检查、`/q/metrics` Prometheus 指标 |
+| Module | Responsibility | Core Contents |
+|--------|----------------|---------------|
+| `quarkforge-bom` | Version alignment | Single import that locks the Quarkus platform and all framework module versions |
+| `quarkforge-core` | Infrastructure (pure JDK, no framework dependencies) | `Result` unified response body, `ErrorCode` error codes, `BizException`, `PageResult`, `Checks` validation, `SnowflakeIdGenerator` |
+| `quarkforge-web` | Web layer | Global exception mapping, automatic response wrapping, `@RawResponse` exemption, access log with traceId, `PageQuery` pagination parameters, file upload/download, API versioning |
+| `quarkforge-validation` | Parameter validation | Business-oriented Bean Validation annotations: `@Phone`, `@IdCard`, `@BankCard`, `@PasswordStrength`, `@EnumValid` |
+| `quarkforge-data` | Data access | `BaseEntity` (snowflake ID + audit timestamps), `BaseRepository` (pagination straight to `PageResult`), `TenantEntity` multi-tenant auto-filtering, `SoftDeleteEntity`/`SoftDeleteRepository` soft delete with recycle bin, `AuditSupport` audit SPI |
+| `quarkforge-audit` | Audit logging | Automatically records create/update/delete operations with field-level diffs on updates (e.g. price 100 → 120), `AuditLog` persistence, operator resolution |
+| `quarkforge-crypto` | Encryption & masking | AES-256-GCM `CryptoService`, `EncryptedStringConverter` field encryption, `@Sensitive` response masking (`138****0000`) |
+| `quarkforge-cache` | Local cache | `CacheService` SPI, Caffeine default implementation (per-entry TTL, capacity limit) |
+| `quarkforge-migration` | Database migration | Flyway starter that automatically runs versioned scripts under `db/migration` at application startup |
+| `quarkforge-security` | Security & authentication | `JwtTokenService` token issuance, `AuthContext` current-user resolution, `LoginUser` |
+| `quarkforge-ratelimit` | Rate limiting | `@RateLimit` annotation, in-memory fixed-window default implementation, `RateLimiter` SPI |
+| `quarkforge-idempotency` | Idempotency | `@Idempotent` annotation, expression-based idempotency keys, cached result replay, `IdempotentStore` SPI (in-memory default / Redis auto-takeover) |
+| `quarkforge-messaging` | Message publishing | `MessageEnvelope` message envelope, `MessagePublisher` SPI, `JsonMessagePublisher` direct object publishing (local default implementation) |
+| `quarkforge-messaging-rabbitmq` | RabbitMQ | Exchange declaration, routing-key delivery, persistent messages, optional publisher confirms |
+| `quarkforge-outbox` | Transactional outbox | Local message table, delayed delivery, exponential-backoff retry on failure, scheduled redelivery |
+| `quarkforge-scheduler` | Job scheduling | JobRunr integration with in-memory storage (standalone) and SQL storage (distributed), built-in dashboard |
+| `quarkforge-redis` | Redis integration | `RedisCacheService` cache-aside, `RedisTwoLevelCacheService` local + Redis two-level cache, `RedisLockService` distributed locks, Redis backends for rate limiting and idempotency (auto-takeover) |
+| `quarkforge-observability` | Observability | OpenAPI/Swagger UI (built-in bearerAuth scheme), `/q/health` health checks, `/q/metrics` Prometheus metrics |
 
-模块按需引入，互不强绑；`core` 不依赖任何 Quarkus 扩展，可单独用于非 Web 场景。
+Modules are pulled in on demand with no forced coupling; `core` has no Quarkus extension dependencies and can be used standalone in non-web scenarios.
 
-## 快速开始
+## Getting Started
 
-新建服务时引入 BOM 与所需模块：
+Import the BOM and the modules you need in a new service:
 
 ```xml
 <dependencyManagement>
@@ -60,7 +60,7 @@
 </dependencies>
 ```
 
-此后资源类直接返回业务对象即可：
+Resource classes can then return business objects directly:
 
 ```java
 @Path("/users")
@@ -68,31 +68,31 @@ public class UserResource {
 
     @GET
     public Map<String, Object> hello() {
-        // 自动包装为 {"code":200,"message":"success","data":{"msg":"hi"}}
+        // Automatically wrapped as {"code":200,"message":"success","data":{"msg":"hi"}}
         return Map.of("msg", "hi");
     }
 
     @GET
     @Path("/{id}")
     public User get(@RestPath Long id) {
-        // 查不到直接抛异常，全局映射为 404 + 统一响应体
+        // Throw an exception when not found; globally mapped to 404 + unified response body
         return userRepository.requireById(id);
     }
 }
 ```
 
-## 各模块用法
+## Module Usage
 
-### 统一响应与异常（core + web）
+### Unified Responses & Exceptions (core + web)
 
-- 返回 POJO 自动包装为 `Result` 结构；标注 `@RawResponse` 可跳过包装（文件下载、外部回调等场景）。
-- 业务代码抛出 `BizException(CommonErrorCode.NOT_FOUND)` 即得到 `404 {"code":40400,...}` 响应。
-- 参数校验（`@NotBlank`、`@Valid`）失败自动汇总为 400 响应。
-- 每个请求自动生成 `traceId` 写入日志 MDC 与 `X-Trace-Id` 响应头。
+- Returned POJOs are automatically wrapped in the `Result` structure; annotate with `@RawResponse` to skip wrapping (file downloads, external callbacks, etc.).
+- Throwing `BizException(CommonErrorCode.NOT_FOUND)` in business code yields a `404 {"code":40400,...}` response.
+- Parameter validation failures (`@NotBlank`, `@Valid`) are automatically aggregated into a 400 response.
+- Every request gets a `traceId` written to the logging MDC and the `X-Trace-Id` response header.
 
-### 参数校验（validation）
+### Parameter Validation (validation)
 
-在标准 Bean Validation（`@NotBlank` / `@Size` 等）之上补充业务常用校验注解；校验失败由 web 层统一映射为 `400 {"code":40000,"message":"字段 错误信息"}`。
+Adds business-oriented validation annotations on top of standard Bean Validation (`@NotBlank` / `@Size`, etc.). Validation failures are mapped by the web layer to `400 {"code":40000,"message":"field error-message"}`.
 
 ```java
 public class RegisterRequest {
@@ -100,40 +100,40 @@ public class RegisterRequest {
     @NotBlank
     public String username;
 
-    @Phone                                // 1[3-9] 开头 11 位
+    @Phone                                // 11 digits starting with 1[3-9]
     public String phone;
 
-    @IdCard                               // 18 位 + 出生日期 + 加权校验位
+    @IdCard                               // 18 digits + birth date + weighted check digit
     public String idCard;
 
-    @BankCard                             // 12~19 位 + Luhn
+    @BankCard                             // 12-19 digits + Luhn checksum
     public String bankCard;
 
     @PasswordStrength(min = 8, requireSpecial = true)
     public String password;
 
-    @EnumValid(UserStatus.class)          // 必须是枚举常量名，可 ignoreCase
+    @EnumValid(UserStatus.class)          // Must be an enum constant name; ignoreCase supported
     public String status;
 }
 ```
 
-所有注解都遵循「`null` 合法、必填交给 `@NotNull`」的惯例；`@Phone`/`@IdCard`/`@BankCard`/`@PasswordStrength` 作用于字符串字段，`@EnumValid` 作用于字符串字段并指定目标枚举。
+All annotations follow the convention "`null` is valid; leave required-ness to `@NotNull`". `@Phone`/`@IdCard`/`@BankCard`/`@PasswordStrength` apply to string fields; `@EnumValid` applies to string fields with a target enum specified.
 
-### 文件上传下载（web）
+### File Upload & Download (web)
 
-`FileStorage` 是存储 SPI，默认实现落本地磁盘（按 `yyyy/MM/dd` 分目录，文件名重写为 UUID，杜绝路径穿越）。
+`FileStorage` is the storage SPI; the default implementation writes to the local disk (partitioned by `yyyy/MM/dd`, filenames rewritten as UUIDs, path traversal prevented).
 
 ```java
 @Inject FileStorage storage;
 
-// multipart 上传
+// Multipart upload
 @POST
 @Consumes(MediaType.MULTIPART_FORM_DATA)
 public StoredFile upload(@RestForm FileUpload file) {
     return FileUploads.store(storage, file);
 }
 
-// 流式下载，中文文件名按 RFC 5987 编码，浏览器可正确显示
+// Streaming download; non-ASCII filenames are RFC 5987 encoded so browsers display them correctly
 @GET
 @Path("/{id}/content")
 public Response download(@RestPath Long id) {
@@ -142,19 +142,19 @@ public Response download(@RestPath Long id) {
 }
 ```
 
-内置防护：超出大小上限抛 `413 {"code":41300}`，MIME 类型不在白名单抛 `415 {"code":41500}`，非法存储键抛 400；写入失败会自动清理半成品文件。
+Built-in protection: exceeding the size limit throws `413 {"code":41300}`, a MIME type outside the whitelist throws `415 {"code":41500}`, and an illegal storage key throws 400; partially written files are cleaned up automatically on write failure.
 
 ```properties
 quarkforge.web.file.base-dir=${java.io.tmpdir}/quarkforge-files
 quarkforge.web.file.max-size=10M
-quarkforge.web.file.allowed-content-types=image/png,application/pdf   # 留空表示不限制
+quarkforge.web.file.allowed-content-types=image/png,application/pdf   # empty means unrestricted
 ```
 
-接入对象存储时实现 `FileStorage` 并注册为普通 Bean 即可覆盖默认实现。
+To integrate object storage, implement `FileStorage` and register it as a regular bean to override the default.
 
-### API 版本管理（web）
+### API Versioning (web)
 
-用 `@ApiVersion` 声明接口支持的版本，调用方通过 `X-API-Version` 请求头（或 URL 首段 `/v1/...`）指定：
+Declare supported versions with `@ApiVersion`; callers specify the version via the `X-API-Version` header (or the first URL segment `/v1/...`):
 
 ```java
 @Path("/orders")
@@ -171,23 +171,23 @@ public class OrderResource {
 }
 ```
 
-- 请求版本不在支持列表内 → `400 {"code":40001,...}`
-- 响应固定回写 `X-API-Version`
-- 废弃接口额外返回 `Deprecation: true`、`Sunset: 2027-01-01`、`Link: </v2/orders>; rel="successor-version"`
-- 未标注 `@ApiVersion` 的接口不做校验，向后兼容；版本号 `1` 与 `v1` 等价
+- Requested version not in the supported list → `400 {"code":40001,...}`
+- Responses always write back `X-API-Version`
+- Deprecated endpoints additionally return `Deprecation: true`, `Sunset: 2027-01-01`, `Link: </v2/orders>; rel="successor-version"`
+- Endpoints without `@ApiVersion` are not validated, keeping backward compatibility; version numbers `1` and `v1` are equivalent
 
-版本号通过过滤器解析后可注入 `ApiVersionContext` 读取：
+After the filter resolves the version, it can be read by injecting `ApiVersionContext`:
 
 ```java
 @Inject ApiVersionContext versionContext;
 String version = versionContext.requested();
 ```
 
-### 数据访问（data）
+### Data Access (data)
 
 ```java
 @Entity
-public class User extends BaseEntity {   // 自动获得雪花 id / createdAt / updatedAt
+public class User extends BaseEntity {   // Automatically gets snowflake id / createdAt / updatedAt
     public String name;
 }
 
@@ -199,66 +199,66 @@ public class UserRepository extends BaseRepository<User> {
 }
 ```
 
-多实例部署时通过 `quarkforge.data.worker-id` 区分雪花节点。
+In multi-instance deployments, distinguish snowflake nodes via `quarkforge.data.worker-id`.
 
-### 多租户与软删除（data）
+### Multi-Tenancy & Soft Delete (data)
 
 ```java
-// 继承 TenantEntity：写入自动填充 tenant_id，查询与按 ID 加载自动带上租户条件
+// Extend TenantEntity: writes auto-fill tenant_id; queries and load-by-id automatically carry the tenant condition
 @Entity
 public class Order extends TenantEntity { }
 
-// 定时任务 / 后台管理跨租户执行
+// Scheduled jobs / admin tasks can run across tenants
 TenantContext.runAs("tenant-a", () -> orderRepository.listAll());
 
-// 继承 SoftDeleteEntity + SoftDeleteRepository
+// Extend SoftDeleteEntity + SoftDeleteRepository
 @Entity
 public class Article extends SoftDeleteEntity { }
 
 @ApplicationScoped
 public class ArticleRepository extends SoftDeleteRepository<Article> { }
 
-article.delete();                              // 只打标记，默认列表不可见
-articleRepository.findAllIncludingDeleted();   // 回收站
-articleRepository.restoreById(id);             // 恢复
-articleRepository.purgeById(id);               // 物理删除
+article.delete();                              // Only sets the flag; hidden from default listings
+articleRepository.findAllIncludingDeleted();   // Recycle bin
+articleRepository.restoreById(id);             // Restore
+articleRepository.purgeById(id);               // Physical delete
 ```
 
-未显式设置租户时使用默认租户 `default`（`quarkforge.data.tenant.default`）。请求入口可按项目鉴权体系调用 `TenantContext.set(...)` 透传租户。
+When no tenant is set explicitly, the default tenant `default` is used (`quarkforge.data.tenant.default`). The request entry point can call `TenantContext.set(...)` to propagate the tenant according to the project's authentication scheme.
 
-### 审计日志（audit）
+### Audit Logging (audit)
 
-引入 `quarkforge-audit` 即自动生效，业务代码无需改动：
+Adding `quarkforge-audit` takes effect automatically with no business code changes:
 
 ```java
 @Inject AuditLogRepository auditLogRepository;
 
 List<AuditLog> logs = auditLogRepository.findByEntity(Order.class.getName(), orderId);
-// action=UPDATE，actor=bob，changes={"changes":[{"field":"price","oldValue":"100","newValue":"120"}]}
+// action=UPDATE, actor=bob, changes={"changes":[{"field":"price","oldValue":"100","newValue":"120"}]}
 ```
 
-- 操作人优先取 `ActorContext`，其次当前 `SecurityIdentity`，最后 `system`
-- 审计与业务数据在同一事务落库，业务回滚时审计一并回滚
-- `@NotAudited` 可跳过指定实体；JPQL / 原生批量更新不触发生命周期回调，因此不会被审计
+- The operator is resolved from `ActorContext` first, then the current `SecurityIdentity`, and finally `system`
+- Audit records are persisted in the same transaction as business data; both roll back together
+- `@NotAudited` skips specified entities; JPQL / native bulk updates do not trigger lifecycle callbacks and are therefore not audited
 
-### 字段加密与脱敏（crypto）
+### Field Encryption & Masking (crypto)
 
 ```properties
-# 32 字节密钥的 Base64，可用 openssl rand -base64 32 生成
+# Base64 of a 32-byte key; generate with openssl rand -base64 32
 quarkforge.crypto.key=...
 ```
 
 ```java
 @Convert(converter = EncryptedStringConverter.class)
 @Sensitive(SensitiveType.PHONE)
-public String phone;   // 数据库存密文，接口返回 "138****0000"
+public String phone;   // Ciphertext in the database, "138****0000" in API responses
 ```
 
-内置 `PHONE` / `ID_CARD` / `EMAIL` / `BANK_CARD` / `NAME` / `PASSWORD` / `DEFAULT` 规则，也可直接调用 `Masking.mask(value, type)`。
+Built-in rules: `PHONE` / `ID_CARD` / `EMAIL` / `BANK_CARD` / `NAME` / `PASSWORD` / `DEFAULT`; you can also call `Masking.mask(value, type)` directly.
 
-### 数据库迁移（migration）
+### Database Migration (migration)
 
-引入 `quarkforge-migration` 后，启动时自动执行版本化脚本：
+After adding `quarkforge-migration`, versioned scripts run automatically at startup:
 
 ```text
 src/main/resources/db/migration/
@@ -266,82 +266,82 @@ src/main/resources/db/migration/
 └── V2__add_order_note.sql
 ```
 
-默认 `migrate-at-start=true`、`baseline-on-migrate=true`，可在业务的 `application.properties` 中覆盖。
+Defaults are `migrate-at-start=true` and `baseline-on-migrate=true`; override them in the application's `application.properties`.
 
-### 任务调度（scheduler）
+### Job Scheduling (scheduler)
 
-基于 JobRunr 9（原生支持 Quarkus 3.40 LTS），本地零配置就能跑，加数据库即自动成为分布式调度。
+Built on JobRunr 9 (native support for Quarkus 3.40 LTS). It runs locally with zero configuration, and adding a database automatically turns it into a distributed scheduler.
 
 ```java
 @Inject SchedulerService scheduler;
 
-// 立即执行（静态方法引用匹配 JobLambda，可被 JobRunr 序列化）
+// Fire-and-forget (a static method reference matches JobLambda and is serializable by JobRunr)
 scheduler.enqueue(TicketService::processDailyReports);
 
-// 延迟到指定时间点执行一次
+// Run once at a specific instant
 scheduler.scheduleAt(Instant.now().plus(Duration.ofMinutes(30)),
         OrderService::sendClosingReminder);
 
-// 标准 6 段 cron 周期执行
+// Standard 6-field cron schedule
 scheduler.scheduleCron("0 0 2 * * *", BillingService::runNightlySettlement);
 scheduler.scheduleCron("0 0/5 * * * *", "refresh-metrics", MetricsService::refreshCaches);
 
-// 固定间隔周期执行（JobRunr 不区分 fixed-delay / fixed-rate）
+// Fixed-interval recurring job (JobRunr does not distinguish fixed-delay / fixed-rate)
 scheduler.scheduleRecurrently(Duration.ofSeconds(30), Heartbeat::send);
 ```
 
-**本地 vs 分布式的自动切换**：
+**Automatic switching between local and distributed modes**:
 
-- **单机模式（默认）**：没有 DataSource 时，[StorageProviderProducer](quarkforge-scheduler/src/main/java/io/github/foundry4j/quarkforge/scheduler/StorageProviderProducer.java) 提供的 `@DefaultBean InMemoryStorageProvider` 生效，BackgroundJobServer 在同一个 JVM 里轮询执行任务。适合开发和单节点部署。
+- **Standalone mode (default)**: without a DataSource, the `@DefaultBean InMemoryStorageProvider` provided by [StorageProviderProducer](quarkforge-scheduler/src/main/java/io/github/foundry4j/quarkforge/scheduler/StorageProviderProducer.java) takes effect, and the BackgroundJobServer polls and executes jobs within the same JVM. Suitable for development and single-node deployments.
 
-- **分布式模式**：引入 H2 / Postgres / MySQL 任何一个 DataSource 后，JobRunr Quarkus 扩展自动检测并注册 `SqlStorageProvider`，所有节点共享同一张 `jobrunr_*` 表，通过乐观锁互斥执行——**多节点部署时同一任务只会被一个节点执行一次**。这也是 JobRunr 的核心优势，比自建 Redis 锁或 Quartz 集群表更轻量。
+- **Distributed mode**: once any DataSource (H2 / Postgres / MySQL) is present, the JobRunr Quarkus extension automatically detects it and registers a `SqlStorageProvider`. All nodes share the same `jobrunr_*` tables and use optimistic locking for mutual exclusion — **in a multi-node deployment each job is executed by exactly one node**. This is JobRunr's core advantage: lighter than a hand-rolled Redis lock or a Quartz cluster table.
 
-**常用配置**（`quarkus.jobrunr.*` 前缀，可在业务 application.properties 覆盖）：
+**Common configuration** (`quarkus.jobrunr.*` prefix; override in the application's application.properties):
 
 ```properties
-# 后台任务处理服务器默认开启，可改 poll-interval 调整轮询频率
-quarkus.jobrunr.background-job-server.poll-interval=5   # 秒（生产建议 15-30）
+# The background job server is enabled by default; tune the poll interval as needed
+quarkus.jobrunr.background-job-server.poll-interval=5   # seconds (15-30 recommended in production)
 
-# 失败重试与任务保留
+# Retry and job retention
 quarkus.jobrunr.jobs.default-number-of-retries=3
 quarkus.jobrunr.jobs.delete-succeeded-jobs-after=36h
 quarkus.jobrunr.jobs.permanently-delete-deleted-jobs-after=72h
 
-# Dashboard 默认关闭，生产需显式开启并加鉴权
+# The dashboard is disabled by default; enable it explicitly and secure it in production
 quarkus.jobrunr.dashboard.enabled=false
 quarkus.jobrunr.dashboard.port=8000
 ```
 
-> 调用方法引用或 lambda 时请确保目标**可被 JobRunr 序列化**：
-> - 静态方法引用（如 `MyService::myStaticMethod`）✅ 最安全，后台 runner 直接反射调用
-> - 实例方法引用（如 `myBean::doWork`）需要通过 ArC 找到 CDI bean 实例，确保该 bean 已注册
-> - lambda 表达式会捕获所在类的引用，反序列化需要该类在 classpath 内
+> When passing method references or lambdas, make sure the target **can be serialized by JobRunr**:
+> - Static method references (e.g. `MyService::myStaticMethod`) ✅ safest — the background runner invokes them directly via reflection
+> - Instance method references (e.g. `myBean::doWork`) require the CDI bean instance to be resolvable through ArC, so make sure the bean is registered
+> - Lambda expressions capture the enclosing class reference, so deserialization requires that class to be on the classpath
 
-### 缓存（cache / redis）
+### Caching (cache / redis)
 
 ```java
 @Inject CacheService cache;
 
-// 未引入 Redis 时：Caffeine 本地缓存
+// Without Redis: Caffeine local cache
 cache.getOrLoad("user:" + id, User.class, Duration.ofMinutes(10), () -> load(id));
 
-// 引入 quarkforge-redis 后自动切换为两级缓存：本地 → Redis → loader
+// After adding quarkforge-redis, it automatically switches to a two-level cache: local → Redis → loader
 ```
 
-### 安全认证（security）
+### Security & Authentication (security)
 
 ```java
 @Inject JwtTokenService jwt;
 @Inject AuthContext auth;
 
-// 登录接口签发令牌
+// Issue a token at the login endpoint
 String token = jwt.issue(user.id.toString(), user.name, Set.of("admin"));
 
-// 业务接口读取当前用户，未登录自动抛出 401
+// Read the current user in business endpoints; 401 is thrown automatically when not logged in
 LoginUser current = auth.currentUser();
 ```
 
-签名/验签密钥沿用 SmallRye JWT 标准配置（推荐 RSA 密钥文件，生产环境请勿提交私钥）：
+Signing/verification keys use the standard SmallRye JWT configuration (RSA key files recommended; never commit private keys in production):
 
 ```properties
 smallrye.jwt.sign.key.location=jwt/privateKey.pem
@@ -349,7 +349,7 @@ mp.jwt.verify.publickey.location=jwt/publicKey.pem
 mp.jwt.verify.issuer=quarkforge
 ```
 
-### 限流（ratelimit）
+### Rate Limiting (ratelimit)
 
 ```java
 @POST
@@ -357,26 +357,26 @@ mp.jwt.verify.issuer=quarkforge
 public Result<Void> sendSmsCode() { ... }
 ```
 
-支持 `USER` / `IP` / `GLOBAL` 三种维度，超额返回 HTTP 429。默认内存实现适合单机；引入 `quarkforge-redis` 后自动切换为 Redis 分布式限流。
+Supports three dimensions: `USER` / `IP` / `GLOBAL`; excess requests get HTTP 429. The default in-memory implementation suits single-node deployments; adding `quarkforge-redis` automatically switches to Redis-based distributed rate limiting.
 
-### 幂等（idempotency）
+### Idempotency (idempotency)
 
 ```java
 @POST
 @Idempotent(key = "order:#req.orderNo", ttlSeconds = 600)
 public Result<OrderVO> createOrder(@RequestBody CreateOrderRequest req) {
-    // 相同 orderNo 的重复请求：
-    // - 首次执行业务方法并缓存返回值 600 秒
-    // - 缓存期内直接回放首次结果，不重复执行
-    // - 并发同键请求返回 HTTP 409（CONFLICT）
+    // Duplicate requests with the same orderNo:
+    // - The first request executes the business method and caches the return value for 600 seconds
+    // - Within the TTL, the cached result is replayed without re-executing
+    // - Concurrent requests with the same key get HTTP 409 (CONFLICT)
 }
 ```
 
-`key` 支持 `#参数名` 与 `#p0` 索引，并可链式 `.字段`；留空时按参数序列化内容生成键。默认内存存储适合单机，引入 `quarkforge-redis` 后自动切换为分布式实现。业务方法抛异常会立即释放幂等键，允许后续重试。
+The `key` supports `#paramName` and `#p0` index references with chained `.field` access; when left empty, the key is generated from the serialized arguments. The default in-memory store suits single-node deployments; adding `quarkforge-redis` automatically switches to the distributed implementation. If the business method throws, the idempotency key is released immediately so later retries are allowed.
 
-### 消息（messaging + RabbitMQ）
+### Messaging (messaging + RabbitMQ)
 
-默认不依赖中间件：消息只写入内存并记录日志（`LocalMessagePublisher`），本地开发可直接跑通；引入 `quarkforge-messaging-rabbitmq` 后自动切换为真实投递。
+No middleware required by default: messages are only written to memory and logged (`LocalMessagePublisher`), so local development works out of the box; adding `quarkforge-messaging-rabbitmq` automatically switches to real delivery.
 
 ```properties
 quarkforge.messaging.rabbitmq.uri=amqp://guest:guest@localhost:5672/
@@ -391,11 +391,11 @@ quarkforge.messaging.rabbitmq.publisher-confirms=true
 publisher.publish("order.created", Map.of("orderNo", orderNo));
 ```
 
-`destination` 作为 routing key；`exchange` 留空则投递到默认交换机（此时 `destination` 就是队列名）。消费端可直接使用 Quarkus 原生 `@Incoming` 或 RabbitMQ 客户端。
+`destination` is used as the routing key; if `exchange` is left empty, the message goes to the default exchange (in which case `destination` is the queue name). Consumers can use Quarkus-native `@Incoming` or a RabbitMQ client directly.
 
-### 事务发件箱（outbox）
+### Transactional Outbox (outbox)
 
-业务写库与消息发送放在同一个事务，避免「订单已落库、消息没发出去」：
+Keep business writes and message sending in the same transaction, avoiding "order persisted but message never sent":
 
 ```java
 @Transactional
@@ -405,84 +405,84 @@ public void createOrder(CreateOrderRequest request) {
 }
 ```
 
-延迟投递与失败重试：
+Delayed delivery and failure retry:
 
 ```java
-// 30 分钟后触发关单检查
+// Trigger an order-closing check 30 minutes later
 outbox.enqueue("order.close-check", Map.of("orderNo", orderNo), Duration.ofMinutes(30));
 ```
 
-后台每 5 秒扫描本地消息表补投；投递失败按 `30s → 60s → 120s …` 指数退避，超过 5 次标记 `FAILED`。多实例部署时通过条件更新抢占消息，同一条消息只会被一个实例投递。普通定时任务可直接使用 Quarkus `@Scheduled`。
+A background job scans the local message table every 5 seconds for redelivery; failures back off exponentially as `30s → 60s → 120s …` and are marked `FAILED` after 5 attempts. In multi-instance deployments, messages are claimed via conditional updates, so each message is delivered by exactly one instance. For plain scheduled tasks, use Quarkus `@Scheduled` directly.
 
-### Redis（redis）
+### Redis (redis)
 
 ```java
-// 旁路缓存
+// Cache-aside
 User user = cache.getOrLoad("user:" + id, User.class, Duration.ofMinutes(10),
         () -> userRepository.requireById(id));
 
-// 分布式锁
+// Distributed lock
 lock.withLock("order:pay:" + orderId, Duration.ofSeconds(30), () -> doPay());
 ```
 
-### 可观测性（observability）
+### Observability (observability)
 
-引入即用：Swagger UI 位于 `/q/swagger-ui`（已内置 JWT bearerAuth 调试方案），健康检查 `/q/health`，Prometheus 指标 `/q/metrics`。
+Works out of the box: Swagger UI at `/q/swagger-ui` (with a built-in JWT bearerAuth debugging scheme), health checks at `/q/health`, Prometheus metrics at `/q/metrics`.
 
-## 示例服务
+## Example Service
 
-`examples/user-service` 是基于本框架的用户微服务示例，串起 web / data / security / ratelimit / observability 各模块：
+`examples/user-service` is a sample user microservice built on this framework, wiring together the web / data / security / ratelimit / observability modules:
 
-| 能力 | 示例中的落点 |
-|------|--------------|
-| 用户 CRUD | [UserResource](examples/user-service/src/main/java/io/github/foundry4j/quarkforge/sample/user/UserResource.java) + [UserService](examples/user-service/src/main/java/io/github/foundry4j/quarkforge/sample/user/UserService.java) + [UserRepository](examples/user-service/src/main/java/io/github/foundry4j/quarkforge/sample/user/UserRepository.java) |
-| 统一响应 | 资源方法直接返回 DTO，自动包装为 `Result` 信封 |
-| 异常与校验 | 用户名重复抛出 `BizException`，请求体校验失败自动返回 400 |
-| 登录鉴权 | `JwtTokenService` 签发 JWT，`/users/me` 用 `@RolesAllowed` 保护 |
-| 限流 | 登录接口 `@RateLimit(permits = 20, windowSeconds = 60)` |
-| 文档监控 | Swagger UI、`/q/health`、`/q/metrics` |
+| Capability | Where it lands in the example |
+|------------|-------------------------------|
+| User CRUD | [UserResource](examples/user-service/src/main/java/io/github/foundry4j/quarkforge/sample/user/UserResource.java) + [UserService](examples/user-service/src/main/java/io/github/foundry4j/quarkforge/sample/user/UserService.java) + [UserRepository](examples/user-service/src/main/java/io/github/foundry4j/quarkforge/sample/user/UserRepository.java) |
+| Unified responses | Resource methods return DTOs directly, automatically wrapped in the `Result` envelope |
+| Exceptions & validation | Duplicate username throws `BizException`; request-body validation failures automatically return 400 |
+| Login & auth | `JwtTokenService` issues JWTs; `/users/me` is protected by `@RolesAllowed` |
+| Rate limiting | Login endpoint: `@RateLimit(permits = 20, windowSeconds = 60)` |
+| Docs & monitoring | Swagger UI, `/q/health`, `/q/metrics` |
 
-接口速览：
+Endpoint overview:
 
-| 方法 | 路径 | 说明 |
-|------|------|------|
-| POST | `/users` | 注册用户 |
-| GET | `/users?keyword=&page=&size=` | 关键字分页检索 |
-| GET | `/users/{id}` | 用户详情，不存在返回 404 |
-| PUT | `/users/{id}` | 更新资料或状态 |
-| DELETE | `/users/{id}` | 删除用户（204） |
-| POST | `/auth/login` | 登录换取 JWT |
-| GET | `/users/me` | 当前登录用户，需 `Authorization: Bearer <token>` |
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/users` | Register a user |
+| GET | `/users?keyword=&page=&size=` | Keyword search with pagination |
+| GET | `/users/{id}` | User details; 404 when not found |
+| PUT | `/users/{id}` | Update profile or status |
+| DELETE | `/users/{id}` | Delete a user (204) |
+| POST | `/auth/login` | Log in to obtain a JWT |
+| GET | `/users/me` | Current logged-in user; requires `Authorization: Bearer <token>` |
 
-本地启动：
+Run locally:
 
 ```bash
 mvn -pl examples/user-service -am install -DskipTests
 mvn -pl examples/user-service quarkus:dev
 ```
 
-示例使用内存 H2 与仓库内的演示 JWT 密钥，可直接运行；生产请替换数据源与密钥。
+The example uses in-memory H2 and demo JWT keys from the repository, so it runs out of the box; replace the data source and keys in production.
 
-## 配置项
+## Configuration
 
-| 配置 | 默认值 | 说明 |
-|------|--------|------|
-| `quarkforge.web.response.auto-wrap` | `true` | 响应体自动包装开关 |
-| `quarkforge.web.access-log.enabled` | `true` | 访问日志开关 |
-| `quarkforge.web.file.base-dir` | `${java.io.tmpdir}/quarkforge-files` | 文件存储根目录 |
-| `quarkforge.web.file.max-size` | `10M` | 单文件大小上限，超出返回 413 |
-| `quarkforge.web.file.allowed-content-types` | 空（不限制） | 允许上传的 MIME 类型，逗号分隔 |
-| `quarkforge.web.version.enabled` | `true` | API 版本处理开关 |
-| `quarkforge.web.version.default` | `v1` | 未指定版本时使用的默认版本 |
-| `quarkforge.data.worker-id` | `0` | 雪花 ID 节点号（[0, 1023]） |
-| `quarkforge.data.tenant.default` | `default` | 未显式设置租户时使用的租户 ID |
-| `quarkforge.audit.enabled` | `true` | 审计日志落库开关 |
-| `quarkforge.crypto.key` | 无（必填） | 字段加密密钥，32 字节的 Base64 |
-| `quarkforge.cache.local.max-size` | `10000` | 本地缓存最大条目数 |
-| `quarkforge.cache.local.default-ttl` | `PT5M` | 本地缓存默认过期时间 |
-| `quarkforge.jwt.issuer` | `quarkforge` | JWT 签发方 |
-| `quarkforge.jwt.ttl-minutes` | `120` | JWT 有效期（分钟） |
-| `quarkforge.outbox.enabled` | `true` | 发件箱后台投递开关 |
-| `quarkforge.outbox.dispatch-interval` | `5s` | 发件箱扫描间隔 |
-| `quarkforge.outbox.max-attempts` | `5` | 单条消息最大投递次数 |
-| `quarkforge.outbox.backoff-seconds` | `30` | 首次失败退避秒数（之后指数翻倍） |
+| Property | Default | Description |
+|----------|---------|-------------|
+| `quarkforge.web.response.auto-wrap` | `true` | Automatic response-body wrapping switch |
+| `quarkforge.web.access-log.enabled` | `true` | Access log switch |
+| `quarkforge.web.file.base-dir` | `${java.io.tmpdir}/quarkforge-files` | File storage root directory |
+| `quarkforge.web.file.max-size` | `10M` | Per-file size limit; excess returns 413 |
+| `quarkforge.web.file.allowed-content-types` | empty (unrestricted) | Allowed upload MIME types, comma-separated |
+| `quarkforge.web.version.enabled` | `true` | API version handling switch |
+| `quarkforge.web.version.default` | `v1` | Default version when none is specified |
+| `quarkforge.data.worker-id` | `0` | Snowflake ID node number ([0, 1023]) |
+| `quarkforge.data.tenant.default` | `default` | Tenant ID used when none is set explicitly |
+| `quarkforge.audit.enabled` | `true` | Audit log persistence switch |
+| `quarkforge.crypto.key` | none (required) | Field encryption key, Base64 of 32 bytes |
+| `quarkforge.cache.local.max-size` | `10000` | Maximum number of local cache entries |
+| `quarkforge.cache.local.default-ttl` | `PT5M` | Default local cache TTL |
+| `quarkforge.jwt.issuer` | `quarkforge` | JWT issuer |
+| `quarkforge.jwt.ttl-minutes` | `120` | JWT validity (minutes) |
+| `quarkforge.outbox.enabled` | `true` | Outbox background dispatch switch |
+| `quarkforge.outbox.dispatch-interval` | `5s` | Outbox scan interval |
+| `quarkforge.outbox.max-attempts` | `5` | Maximum delivery attempts per message |
+| `quarkforge.outbox.backoff-seconds` | `30` | Initial failure backoff in seconds (doubles exponentially afterwards) |
