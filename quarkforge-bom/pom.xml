@@ -103,6 +103,11 @@
             </dependency>
             <dependency>
                 <groupId>io.github.foundry4j</groupId>
+                <artifactId>quarkforge-rpc</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.github.foundry4j</groupId>
                 <artifactId>quarkforge-scheduler</artifactId>
                 <version>${project.version}</version>
             </dependency>

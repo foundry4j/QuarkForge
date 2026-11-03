@@ -29,6 +29,7 @@ A modular rapid microservice development framework based on Quarkus, with built-
 | `quarkforge-messaging` | Message publishing | `MessageEnvelope` message envelope, `MessagePublisher` SPI, `JsonMessagePublisher` direct object publishing (local default implementation) |
 | `quarkforge-messaging-rabbitmq` | RabbitMQ | Exchange declaration, routing-key delivery, persistent messages, optional publisher confirms |
 | `quarkforge-outbox` | Transactional outbox | Local message table, delayed delivery, exponential-backoff retry on failure, scheduled redelivery |
+| `quarkforge-rpc` | RPC communication | gRPC infrastructure: `BizException` ↔ gRPC status mapping with error-code trailers, traceId propagation interceptors, built-in `Echo` diagnostics service |
 | `quarkforge-scheduler` | Job scheduling | JobRunr integration with in-memory storage (standalone) and SQL storage (distributed), built-in dashboard |
 | `quarkforge-redis` | Redis integration | `RedisCacheService` cache-aside, `RedisTwoLevelCacheService` local + Redis two-level cache, `RedisLockService` distributed locks, Redis backends for rate limiting and idempotency (auto-takeover) |
 | `quarkforge-observability` | Observability | OpenAPI/Swagger UI (built-in bearerAuth scheme), `/q/health` health checks, `/q/metrics` Prometheus metrics |
@@ -414,6 +415,56 @@ outbox.enqueue("order.close-check", Map.of("orderNo", orderNo), Duration.ofMinut
 
 A background job scans the local message table every 5 seconds for redelivery; failures back off exponentially as `30s → 60s → 120s …` and are marked `FAILED` after 5 attempts. In multi-instance deployments, messages are claimed via conditional updates, so each message is delivered by exactly one instance. For plain scheduled tasks, use Quarkus `@Scheduled` directly.
 
+### RPC (rpc)
+
+gRPC-based communication foundation for inter-service calls, built on `quarkus-grpc`. Service definitions live in `src/main/proto`; the Quarkus build generates blocking, async and Mutiny stubs.
+
+**Server side**: implement the generated `*ImplBase` (or the Mutiny service interface) as a CDI bean annotated `@GrpcService` + `@Singleton`; it is exposed on the gRPC port (default 9000):
+
+```java
+@GrpcService
+@Singleton
+public class OrderGrpcService extends OrderGrpc.OrderImplBase {
+
+    @Override
+    public void get(GetRequest request, StreamObserver<GetResponse> responseObserver) {
+        // Throw BizException directly — the global interceptor maps it to a gRPC status
+        Order order = orderRepository.findByIdOptional(request.getId())
+                .orElseThrow(() -> new BizException(CommonErrorCode.NOT_FOUND));
+        responseObserver.onNext(toResponse(order));
+        responseObserver.onCompleted();
+    }
+}
+```
+
+**Client side**: inject stubs with `@GrpcClient` and configure the channel:
+
+```java
+@GrpcClient("order")
+OrderGrpc.OrderBlockingStub orderStub;
+```
+
+```properties
+quarkus.grpc.clients.order.host=order-service
+quarkus.grpc.clients.order.port=9000
+```
+
+**Unified error mapping**: a server-side `BizException` is converted to the matching gRPC status by its HTTP-aligned code segment (40400 → NOT_FOUND, 40100 → UNAUTHENTICATED, 42900 → RESOURCE_EXHAUSTED, …), with the original numeric code carried in the `x-error-code` trailer. Clients recover it with [RpcErrors](quarkforge-rpc/src/main/java/io/github/foundry4j/quarkforge/rpc/RpcErrors.java):
+
+```java
+try {
+    orderStub.get(request);
+} catch (StatusRuntimeException e) {
+    throw RpcErrors.toBizException(e);   // back to BizException with the original error code
+}
+```
+
+Unhandled server exceptions map to `INTERNAL` without leaking internal details in the status description. Note the mapping applies to exceptions thrown directly by the service method (ImplBase style, or Mutiny methods that throw synchronously) rather than failed `Uni`s.
+
+**Trace propagation**: with tracing enabled (default), the client interceptor forwards the current MDC `traceId` as the `x-trace-id` metadata header, and the server interceptor restores it into MDC — RPC logs line up with HTTP logs under the same trace id.
+
+**Diagnostics**: the built-in `Echo` service returns the message it receives plus the trace id observed on the server, handy for verifying connectivity and interceptor wiring after deployment.
+
 ### Redis (redis)
 
 ```java
@@ -474,6 +525,7 @@ The example uses in-memory H2 and demo JWT keys from the repository, so it runs 
 | `quarkforge.web.file.allowed-content-types` | empty (unrestricted) | Allowed upload MIME types, comma-separated |
 | `quarkforge.web.version.enabled` | `true` | API version handling switch |
 | `quarkforge.web.version.default` | `v1` | Default version when none is specified |
+| `quarkforge.rpc.trace.enabled` | `true` | gRPC traceId propagation switch (client + server interceptors) |
 | `quarkforge.data.worker-id` | `0` | Snowflake ID node number ([0, 1023]) |
 | `quarkforge.data.tenant.default` | `default` | Tenant ID used when none is set explicitly |
 | `quarkforge.audit.enabled` | `true` | Audit log persistence switch |

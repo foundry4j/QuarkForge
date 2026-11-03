@@ -26,6 +26,7 @@
         <module>quarkforge-messaging</module>
         <module>quarkforge-messaging-rabbitmq</module>
         <module>quarkforge-outbox</module>
+        <module>quarkforge-rpc</module>
         <module>quarkforge-scheduler</module>
         <module>quarkforge-observability</module>
         <module>examples/user-service</module>
@@ -131,6 +132,11 @@
             <dependency>
                 <groupId>io.github.foundry4j</groupId>
                 <artifactId>quarkforge-outbox</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.github.foundry4j</groupId>
+                <artifactId>quarkforge-rpc</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>

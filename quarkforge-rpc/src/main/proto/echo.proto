@@ -1,0 +1,22 @@
+syntax = "proto3";
+
+package quarkforge.rpc;
+
+option java_multiple_files = true;
+option java_package = "io.github.foundry4j.quarkforge.rpc.grpc";
+option java_outer_classname = "EchoProto";
+
+// 内置连通性诊断服务：探测 gRPC 链路、拦截器与配置是否生效
+service Echo {
+  rpc Ping(EchoRequest) returns (EchoResponse);
+}
+
+message EchoRequest {
+  string message = 1;
+}
+
+message EchoResponse {
+  string message = 1;
+  // 服务端日志 MDC 中看到的 traceId（用于验证链路透传）
+  string trace_id = 2;
+}
