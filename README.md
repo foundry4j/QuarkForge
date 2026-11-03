@@ -19,14 +19,18 @@
 | `quarkforge-bom` | 版本对齐 | 一次 import 锁定 Quarkus 平台与全部框架模块版本 |
 | `quarkforge-core` | 基础设施（纯 JDK，无框架依赖） | `Result` 统一响应体、`ErrorCode` 错误码、`BizException`、`PageResult`、`Checks` 校验、`SnowflakeIdGenerator` |
 | `quarkforge-web` | Web 层 | 全局异常映射、响应体自动包装、`@RawResponse` 豁免、访问日志与 traceId、`PageQuery` 分页参数 |
-| `quarkforge-data` | 数据访问 | `BaseEntity`（雪花 ID + 审计时间戳）、`BaseRepository`（分页直达 `PageResult`） |
+| `quarkforge-data` | 数据访问 | `BaseEntity`（雪花 ID + 审计时间戳）、`BaseRepository`（分页直达 `PageResult`）、`TenantEntity` 多租户自动过滤、`SoftDeleteEntity`/`SoftDeleteRepository` 软删除与回收站、`AuditSupport` 审计 SPI |
+| `quarkforge-audit` | 审计日志 | 自动记录新增/更新/删除，更新时输出字段级差异（如价格 100 → 120），`AuditLog` 落库、操作人解析 |
+| `quarkforge-crypto` | 加密与脱敏 | AES-256-GCM `CryptoService`、`EncryptedStringConverter` 字段加密、`@Sensitive` 接口返回脱敏（`138****0000`） |
+| `quarkforge-cache` | 本地缓存 | `CacheService` SPI、Caffeine 默认实现（按条目 TTL、容量上限） |
+| `quarkforge-migration` | 数据库迁移 | Flyway starter，应用启动时自动执行 `db/migration` 下的版本化脚本 |
 | `quarkforge-security` | 安全认证 | `JwtTokenService` 令牌签发、`AuthContext` 当前用户解析、`LoginUser` |
 | `quarkforge-ratelimit` | 限流 | `@RateLimit` 注解、内存固定窗口默认实现、`RateLimiter` SPI |
 | `quarkforge-idempotency` | 幂等 | `@Idempotent` 注解、表达式幂等键、结果缓存回放、`IdempotentStore` SPI（内存默认 / Redis 自动接管） |
 | `quarkforge-messaging` | 消息发布 | `MessageEnvelope` 消息信封、`MessagePublisher` SPI、`JsonMessagePublisher` 对象直发（本机默认实现） |
 | `quarkforge-messaging-rabbitmq` | RabbitMQ | 交换机声明、routing key 投递、持久化消息、可选 publisher confirms |
 | `quarkforge-outbox` | 事务发件箱 | 本地消息表、延迟投递、失败指数退避重试、定时补投 |
-| `quarkforge-redis` | Redis 集成 | `RedisCacheService` 旁路缓存、`RedisLockService` 分布式锁、Redis 限流与幂等后端（自动接管） |
+| `quarkforge-redis` | Redis 集成 | `RedisCacheService` 旁路缓存、`RedisTwoLevelCacheService` 本地 + Redis 两级缓存、`RedisLockService` 分布式锁、Redis 限流与幂等后端（自动接管） |
 | `quarkforge-observability` | 可观测性 | OpenAPI/Swagger UI（内置 bearerAuth 方案）、`/q/health` 健康检查、`/q/metrics` Prometheus 指标 |
 
 模块按需引入，互不强绑；`core` 不依赖任何 Quarkus 扩展，可单独用于非 Web 场景。
@@ -103,6 +107,84 @@ public class UserRepository extends BaseRepository<User> {
 ```
 
 多实例部署时通过 `quarkforge.data.worker-id` 区分雪花节点。
+
+### 多租户与软删除（data）
+
+```java
+// 继承 TenantEntity：写入自动填充 tenant_id，查询与按 ID 加载自动带上租户条件
+@Entity
+public class Order extends TenantEntity { }
+
+// 定时任务 / 后台管理跨租户执行
+TenantContext.runAs("tenant-a", () -> orderRepository.listAll());
+
+// 继承 SoftDeleteEntity + SoftDeleteRepository
+@Entity
+public class Article extends SoftDeleteEntity { }
+
+@ApplicationScoped
+public class ArticleRepository extends SoftDeleteRepository<Article> { }
+
+article.delete();                              // 只打标记，默认列表不可见
+articleRepository.findAllIncludingDeleted();   // 回收站
+articleRepository.restoreById(id);             // 恢复
+articleRepository.purgeById(id);               // 物理删除
+```
+
+未显式设置租户时使用默认租户 `default`（`quarkforge.data.tenant.default`）。请求入口可按项目鉴权体系调用 `TenantContext.set(...)` 透传租户。
+
+### 审计日志（audit）
+
+引入 `quarkforge-audit` 即自动生效，业务代码无需改动：
+
+```java
+@Inject AuditLogRepository auditLogRepository;
+
+List<AuditLog> logs = auditLogRepository.findByEntity(Order.class.getName(), orderId);
+// action=UPDATE，actor=bob，changes={"changes":[{"field":"price","oldValue":"100","newValue":"120"}]}
+```
+
+- 操作人优先取 `ActorContext`，其次当前 `SecurityIdentity`，最后 `system`
+- 审计与业务数据在同一事务落库，业务回滚时审计一并回滚
+- `@NotAudited` 可跳过指定实体；JPQL / 原生批量更新不触发生命周期回调，因此不会被审计
+
+### 字段加密与脱敏（crypto）
+
+```properties
+# 32 字节密钥的 Base64，可用 openssl rand -base64 32 生成
+quarkforge.crypto.key=...
+```
+
+```java
+@Convert(converter = EncryptedStringConverter.class)
+@Sensitive(SensitiveType.PHONE)
+public String phone;   // 数据库存密文，接口返回 "138****0000"
+```
+
+内置 `PHONE` / `ID_CARD` / `EMAIL` / `BANK_CARD` / `NAME` / `PASSWORD` / `DEFAULT` 规则，也可直接调用 `Masking.mask(value, type)`。
+
+### 数据库迁移（migration）
+
+引入 `quarkforge-migration` 后，启动时自动执行版本化脚本：
+
+```text
+src/main/resources/db/migration/
+├── V1__create_order.sql
+└── V2__add_order_note.sql
+```
+
+默认 `migrate-at-start=true`、`baseline-on-migrate=true`，可在业务的 `application.properties` 中覆盖。
+
+### 缓存（cache / redis）
+
+```java
+@Inject CacheService cache;
+
+// 未引入 Redis 时：Caffeine 本地缓存
+cache.getOrLoad("user:" + id, User.class, Duration.ofMinutes(10), () -> load(id));
+
+// 引入 quarkforge-redis 后自动切换为两级缓存：本地 → Redis → loader
+```
 
 ### 安全认证（security）
 
@@ -246,6 +328,11 @@ mvn -pl examples/user-service quarkus:dev
 | `quarkforge.web.response.auto-wrap` | `true` | 响应体自动包装开关 |
 | `quarkforge.web.access-log.enabled` | `true` | 访问日志开关 |
 | `quarkforge.data.worker-id` | `0` | 雪花 ID 节点号（[0, 1023]） |
+| `quarkforge.data.tenant.default` | `default` | 未显式设置租户时使用的租户 ID |
+| `quarkforge.audit.enabled` | `true` | 审计日志落库开关 |
+| `quarkforge.crypto.key` | 无（必填） | 字段加密密钥，32 字节的 Base64 |
+| `quarkforge.cache.local.max-size` | `10000` | 本地缓存最大条目数 |
+| `quarkforge.cache.local.default-ttl` | `PT5M` | 本地缓存默认过期时间 |
 | `quarkforge.jwt.issuer` | `quarkforge` | JWT 签发方 |
 | `quarkforge.jwt.ttl-minutes` | `120` | JWT 有效期（分钟） |
 | `quarkforge.outbox.enabled` | `true` | 发件箱后台投递开关 |
