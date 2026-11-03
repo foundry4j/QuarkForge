@@ -13,6 +13,7 @@
         <module>quarkforge-bom</module>
         <module>quarkforge-core</module>
         <module>quarkforge-web</module>
+        <module>quarkforge-validation</module>
         <module>quarkforge-data</module>
         <module>quarkforge-audit</module>
         <module>quarkforge-crypto</module>
@@ -60,6 +61,11 @@
             <dependency>
                 <groupId>io.github.foundry4j</groupId>
                 <artifactId>quarkforge-web</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.github.foundry4j</groupId>
+                <artifactId>quarkforge-validation</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>

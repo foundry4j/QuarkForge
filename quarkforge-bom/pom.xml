@@ -33,6 +33,11 @@
             </dependency>
             <dependency>
                 <groupId>io.github.foundry4j</groupId>
+                <artifactId>quarkforge-validation</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.github.foundry4j</groupId>
                 <artifactId>quarkforge-data</artifactId>
                 <version>${project.version}</version>
             </dependency>

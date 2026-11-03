@@ -1,16 +1,14 @@
-<p align="left">
-  <img src="docs/logo.svg" alt="QuarkForge logo" width="100">
-</p>
-
 # QuarkForge
 
-基于 Quarkus 的模块化快速微服务开发框架，内置统一响应、异常处理、数据访问、安全认证、限流、Redis 与可观测性等日常开发基础能力。
+<img src="docs/logo.svg" alt="QuarkForge logo" align="right" width="128" height="128" />
 
 <p align="left">
   <img src="https://img.shields.io/badge/JDK-27-orange" alt="JDK 27">
   <img src="https://img.shields.io/badge/Quarkus-3.40-blue" alt="Quarkus 3.40">
   <img src="https://img.shields.io/badge/Maven-3.9+-red" alt="Maven 3.9+">
 </p>
+
+基于 Quarkus 的模块化快速微服务开发框架，内置统一响应、异常处理、数据访问、安全认证、限流、Redis 与可观测性等日常开发基础能力。
 
 ## 模块结构
 
@@ -19,6 +17,7 @@
 | `quarkforge-bom` | 版本对齐 | 一次 import 锁定 Quarkus 平台与全部框架模块版本 |
 | `quarkforge-core` | 基础设施（纯 JDK，无框架依赖） | `Result` 统一响应体、`ErrorCode` 错误码、`BizException`、`PageResult`、`Checks` 校验、`SnowflakeIdGenerator` |
 | `quarkforge-web` | Web 层 | 全局异常映射、响应体自动包装、`@RawResponse` 豁免、访问日志与 traceId、`PageQuery` 分页参数、文件上传下载、API 版本管理 |
+| `quarkforge-validation` | 参数校验 | 业务常用 Bean Validation 注解：`@Phone`、`@IdCard`、`@BankCard`、`@PasswordStrength`、`@EnumValid` |
 | `quarkforge-data` | 数据访问 | `BaseEntity`（雪花 ID + 审计时间戳）、`BaseRepository`（分页直达 `PageResult`）、`TenantEntity` 多租户自动过滤、`SoftDeleteEntity`/`SoftDeleteRepository` 软删除与回收站、`AuditSupport` 审计 SPI |
 | `quarkforge-audit` | 审计日志 | 自动记录新增/更新/删除，更新时输出字段级差异（如价格 100 → 120），`AuditLog` 落库、操作人解析 |
 | `quarkforge-crypto` | 加密与脱敏 | AES-256-GCM `CryptoService`、`EncryptedStringConverter` 字段加密、`@Sensitive` 接口返回脱敏（`138****0000`） |
@@ -90,6 +89,35 @@ public class UserResource {
 - 业务代码抛出 `BizException(CommonErrorCode.NOT_FOUND)` 即得到 `404 {"code":40400,...}` 响应。
 - 参数校验（`@NotBlank`、`@Valid`）失败自动汇总为 400 响应。
 - 每个请求自动生成 `traceId` 写入日志 MDC 与 `X-Trace-Id` 响应头。
+
+### 参数校验（validation）
+
+在标准 Bean Validation（`@NotBlank` / `@Size` 等）之上补充业务常用校验注解；校验失败由 web 层统一映射为 `400 {"code":40000,"message":"字段 错误信息"}`。
+
+```java
+public class RegisterRequest {
+
+    @NotBlank
+    public String username;
+
+    @Phone                                // 1[3-9] 开头 11 位
+    public String phone;
+
+    @IdCard                               // 18 位 + 出生日期 + 加权校验位
+    public String idCard;
+
+    @BankCard                             // 12~19 位 + Luhn
+    public String bankCard;
+
+    @PasswordStrength(min = 8, requireSpecial = true)
+    public String password;
+
+    @EnumValid(UserStatus.class)          // 必须是枚举常量名，可 ignoreCase
+    public String status;
+}
+```
+
+所有注解都遵循「`null` 合法、必填交给 `@NotNull`」的惯例；`@Phone`/`@IdCard`/`@BankCard`/`@PasswordStrength` 作用于字符串字段，`@EnumValid` 作用于字符串字段并指定目标枚举。
 
 ### 文件上传下载（web）
 
