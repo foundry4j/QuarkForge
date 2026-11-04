@@ -31,6 +31,7 @@ A modular rapid microservice development framework based on Quarkus, with built-
 | `quarkforge-outbox` | Transactional outbox | Local message table, delayed delivery, exponential-backoff retry on failure, scheduled redelivery |
 | `quarkforge-rpc` | RPC communication | gRPC infrastructure: `BizException` ↔ gRPC status mapping with error-code trailers, traceId propagation interceptors, built-in `Echo` diagnostics service |
 | `quarkforge-scheduler` | Job scheduling | JobRunr integration with in-memory storage (standalone) and SQL storage (distributed), built-in dashboard |
+| `quarkforge-notification` | Notification center | Multi-tenant notification persistence, `NotificationSender` SPI for business modules to decouple from delivery concerns, REST API, and WebSocket real-time push |
 | `quarkforge-redis` | Redis integration | `RedisCacheService` cache-aside, `RedisTwoLevelCacheService` local + Redis two-level cache, `RedisLockService` distributed locks, Redis backends for rate limiting and idempotency (auto-takeover) |
 | `quarkforge-observability` | Observability | OpenAPI/Swagger UI (built-in bearerAuth scheme), `/q/health` health checks, `/q/metrics` Prometheus metrics |
 
@@ -464,6 +465,55 @@ Unhandled server exceptions map to `INTERNAL` without leaking internal details i
 **Trace propagation**: with tracing enabled (default), the client interceptor forwards the current MDC `traceId` as the `x-trace-id` metadata header, and the server interceptor restores it into MDC — RPC logs line up with HTTP logs under the same trace id.
 
 **Diagnostics**: the built-in `Echo` service returns the message it receives plus the trace id observed on the server, handy for verifying connectivity and interceptor wiring after deployment.
+
+### Notification Center (notification)
+
+Drop-in notification infrastructure for microservices: multi-tenant persistence, a decoupled sender SPI, REST API for the current user, and WebSocket real-time push with offline compensation.
+
+**Business module integration**: inject the SPI and fire notifications from anywhere — the module takes care of persistence and WebSocket delivery:
+
+```java
+@Inject NotificationSender notifier;
+
+// When a task is assigned
+notifier.send(assigneeId, NotificationType.TASK,
+        "You have a new task", "Please handle it", currentUserId, "/tasks/" + taskId);
+
+// System-wide announcement (actorId omitted)
+notifier.sendSystem(userId, "Maintenance window", "Scheduled tonight 02:00-03:00");
+```
+
+The SPI lives in `quarkforge.notification.service.NotificationSender`; the default implementation is `NotificationService`, which persists the record and attempts a WebSocket push in the same transaction. Offline users get the notification on reconnection — the WebSocket endpoint auto-delivers all rows with `deliveredAt IS NULL` to newly connected clients.
+
+**REST API** (all scoped to the authenticated user via `AuthContext`):
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/notifications` | Paginated list; `?unread-only=true` to filter |
+| GET | `/notifications/unread-count` | Unread count |
+| PATCH | `/notifications/{id}/read` | Mark a single notification read |
+| PATCH | `/notifications/read-all` | Mark everything read (returns how many rows changed) |
+| DELETE | `/notifications/{id}` | Delete a notification |
+
+Responses auto-wrap with `Result<T>` by the web module. Forbidding someone else's notification is guarded by both the tenant filter and the explicit `recipientId` check.
+
+**WebSocket real-time push**: the server exposes `/ws/notifications`. Clients should authenticate via the standard Quarkus Security flow — or pass `?userId=<id>` for trusted internal service-to-service scenarios. The server pushes a plain JSON envelope for each new notification:
+
+```json
+{
+  "id": 1234567890,
+  "type": "TASK",
+  "title": "You have a new task",
+  "content": "Please handle it",
+  "link": "/tasks/42",
+  "actorId": "u001",
+  "createdAt": "2026-11-04T10:00:00Z"
+}
+```
+
+Clients keep the connection alive by replying `pong` to the server's `ping` (or send their own; the WebSocket handler accepts both directions). On reconnect the server replays all notifications with `deliveredAt IS NULL`, so no notification is lost across brief disconnections.
+
+**Multi-tenancy**: `Notification` extends `TenantEntity` — tenant_id is auto-filled from `TenantContext`, and all reads go through the Hibernate tenant filter, so tenant A cannot peek at tenant B's notifications.
 
 ### Redis (redis)
 

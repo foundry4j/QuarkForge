@@ -28,6 +28,7 @@
         <module>quarkforge-outbox</module>
         <module>quarkforge-rpc</module>
         <module>quarkforge-scheduler</module>
+        <module>quarkforge-notification</module>
         <module>quarkforge-observability</module>
         <module>examples/user-service</module>
     </modules>
@@ -142,6 +143,11 @@
             <dependency>
                 <groupId>io.github.foundry4j</groupId>
                 <artifactId>quarkforge-scheduler</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.github.foundry4j</groupId>
+                <artifactId>quarkforge-notification</artifactId>
                 <version>${project.version}</version>
             </dependency>
         </dependencies>
