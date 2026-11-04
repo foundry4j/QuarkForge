@@ -34,6 +34,14 @@
             <artifactId>quarkforge-observability</artifactId>
         </dependency>
         <dependency>
+            <groupId>io.github.foundry4j</groupId>
+            <artifactId>quarkforge-rpc</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-grpc</artifactId>
+        </dependency>
+        <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-jdbc-h2</artifactId>
         </dependency>
@@ -53,6 +61,8 @@
                     <execution>
                         <goals>
                             <goal>build</goal>
+                            <goal>generate-code</goal>
+                            <goal>generate-code-tests</goal>
                         </goals>
                     </execution>
                 </executions>

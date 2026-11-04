@@ -531,9 +531,16 @@ lock.withLock("order:pay:" + orderId, Duration.ofSeconds(30), () -> doPay());
 
 Works out of the box: Swagger UI at `/q/swagger-ui` (with a built-in JWT bearerAuth debugging scheme), health checks at `/q/health`, Prometheus metrics at `/q/metrics`.
 
-## Example Service
+## Example Services
 
-`examples/user-service` is a sample user microservice built on this framework, wiring together the web / data / security / ratelimit / observability modules:
+Two runnable sample services demonstrate inter-service communication over gRPC:
+
+- `examples/user-service` — a user microservice (web / data / security / ratelimit / observability) that also exposes a `UserService` gRPC endpoint on port `9001`.
+- `examples/order-service` — an order microservice that validates the ordering user by calling user-service over gRPC before persisting an order.
+
+### User Service
+
+`examples/user-service` wires together the web / data / security / ratelimit / observability modules:
 
 | Capability | Where it lands in the example |
 |------------|-------------------------------|
@@ -542,6 +549,7 @@ Works out of the box: Swagger UI at `/q/swagger-ui` (with a built-in JWT bearerA
 | Exceptions & validation | Duplicate username throws `BizException`; request-body validation failures automatically return 400 |
 | Login & auth | `JwtTokenService` issues JWTs; `/users/me` is protected by `@RolesAllowed` |
 | Rate limiting | Login endpoint: `@RateLimit(permits = 20, windowSeconds = 60)` |
+| gRPC user lookup | [UserGrpcService](examples/user-service/src/main/java/io/github/foundry4j/quarkforge/sample/user/UserGrpcService.java) exposes `GetUser` on port `9001`, delegating to `UserService` |
 | Docs & monitoring | Swagger UI, `/q/health`, `/q/metrics` |
 
 Endpoint overview:
@@ -556,14 +564,27 @@ Endpoint overview:
 | POST | `/auth/login` | Log in to obtain a JWT |
 | GET | `/users/me` | Current logged-in user; requires `Authorization: Bearer <token>` |
 
-Run locally:
+### Order Service (gRPC caller)
+
+`examples/order-service` shows how one microservice calls another over gRPC using the `quarkforge-rpc` infrastructure. Before persisting an order it calls user-service's `GetUser` to verify the user exists and is active.
+
+| Capability | Where it lands in the example |
+|------------|-------------------------------|
+| Order CRUD | [OrderResource](examples/order-service/src/main/java/io/github/foundry4j/quarkforge/sample/order/OrderResource.java) + [OrderService](examples/order-service/src/main/java/io/github/foundry4j/quarkforge/sample/order/OrderService.java) |
+| gRPC client | `@GrpcClient("user") UserServiceGrpc.UserServiceBlockingStub` configured via `quarkus.grpc.clients.user.*` |
+| Error propagation | `StatusRuntimeException` from user-service is restored to `BizException` via `RpcErrors.toBizException`, so a 404 from user-service surfaces as `40400` to the HTTP client |
+| Disabled-user guard | Returns `403` when the looked-up user is `DISABLED` |
+
+Run both locally (user-service first so its gRPC server is up):
 
 ```bash
 mvn -pl examples/user-service -am install -DskipTests
-mvn -pl examples/user-service quarkus:dev
+mvn -pl examples/order-service -am install -DskipTests
+mvn -pl examples/user-service quarkus:dev          # HTTP 8081, gRPC 9001
+mvn -pl examples/order-service quarkus:dev         # HTTP 8082
 ```
 
-The example uses in-memory H2 and demo JWT keys from the repository, so it runs out of the box; replace the data source and keys in production.
+Both examples use in-memory H2 and (user-service) demo JWT keys from the repository, so they run out of the box; replace the data source and keys in production.
 
 ## Configuration
 

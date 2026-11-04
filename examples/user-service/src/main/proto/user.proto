@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+package quarkforge.sample.user;
+
+option java_multiple_files = true;
+option java_package = "io.github.foundry4j.quarkforge.sample.user.grpc";
+option java_outer_classname = "UserProto";
+
+// user-service 对外暴露的 gRPC 服务，供其它微服务按 ID 查询用户信息。
+service UserService {
+  rpc GetUser(GetUserRequest) returns (UserReply);
+}
+
+message GetUserRequest {
+  int64 id = 1;
+}
+
+message UserReply {
+  int64 id = 1;
+  string username = 2;
+  string display_name = 3;
+  string status = 4;
+}

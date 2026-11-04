@@ -53,7 +53,8 @@
         <module>quarkforge-scheduler</module>
         <module>quarkforge-notification</module>
         <module>quarkforge-observability</module>
-        <!-- <module>examples/user-service</module> -->
+        <module>examples/user-service</module>
+        <module>examples/order-service</module>
     </modules>
 
     <properties>
