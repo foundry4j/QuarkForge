@@ -34,7 +34,7 @@ jobs:
         # Stops at the test phase on purpose: verify/package trigger GPG signing
         # and shading, which are only meant for release builds. JaCoCo's report
         # goal is bound to the test phase and produces target/site/jacoco/jacoco.xml.
-        run: mvn --batch-mode --no-transfer-progress -Psonar test  -Dsurefire.timeout=600 -Dquarkus.test.continuous-testing=disabled
+        run: mvn --batch-mode --no-transfer-progress -Psonar test  -Dsurefire.timeout=600 -Dquarkus.bootstrap.blocking-task-runner=true
 
       - name: SonarCloud analysis
         # Fork pull requests do not have access to repository secrets; the scan
