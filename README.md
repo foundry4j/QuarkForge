@@ -2,11 +2,10 @@
 
 <img src="docs/logo.svg" alt="QuarkForge logo" align="right" width="128" height="128" />
 
-<p align="left">
-  <img src="https://img.shields.io/badge/JDK-27-orange" alt="JDK 27">
-  <img src="https://img.shields.io/badge/Quarkus-3.40-blue" alt="Quarkus 3.40">
-  <img src="https://img.shields.io/badge/Maven-3.9+-red" alt="Maven 3.9+">
-</p>
+[![Maven Central](https://img.shields.io/maven-central/v/io.github.foundry4j/QuarkForge?logo=apachemaven&color=blue)](https://central.sonatype.com/artifact/io.github.foundry4j/QuarkForge)
+![Java 27+](https://img.shields.io/badge/Java-27%2B-ED8B00?logo=openjdk&logoColor=white)
+[![Quarkus 3.40](https://img.shields.io/badge/Quarkus-3.40-blue)](https://img.shields.io/badge/Quarkus-3.40-blue)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green)](https://opensource.org/license/mit)
 
 A modular rapid microservice development framework based on Quarkus, with built-in everyday development fundamentals such as unified responses, exception handling, data access, security authentication, rate limiting, Redis, and observability.
 

@@ -351,8 +351,8 @@
             <id>sonar</id>
             <properties>
                 <sonar.host.url>https://sonarcloud.io</sonar.host.url>
-                <sonar.organization>tuyucheng777</sonar.organization>
-                <sonar.projectKey>tuyucheng777_QuarkForge</sonar.projectKey>
+                <sonar.organization>foundry4j</sonar.organization>
+                <sonar.projectKey>foundry4j_QuarkForge</sonar.projectKey>
                 <sonar.projectName>QuarkForge</sonar.projectName>
                 <sonar.sourceEncoding>UTF-8</sonar.sourceEncoding>
                 <sonar.coverage.jacoco.xmlReportPaths>${project.build.directory}/site/jacoco/jacoco.xml</sonar.coverage.jacoco.xmlReportPaths>
