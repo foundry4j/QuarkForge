@@ -234,7 +234,7 @@
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>${maven-compiler-plugin.version}</version>
                 <configuration>
-                    <release>${java.version}</release>
+                    <release>${maven.compiler.release}</release>
                     <encoding>UTF-8</encoding>
                     <!-- 保留方法参数名，供运行时反射按名解析（幂等键 #参数名 等） -->
                     <parameters>true</parameters>
@@ -245,8 +245,9 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>${maven-surefire-plugin.version}</version>
                 <configuration>
-                    <!-- @{...} is Surefire late property evaluation, merging the JaCoCo agent with the memory settings -->
-                    <argLine>@{surefireArgLine} -Xmx512m</argLine>
+                    <!-- @{...} is Surefire late property evaluation, merging the JaCoCo agent,
+                         the JVM arguments injected by the Quarkus extension and the memory settings -->
+                    <argLine>@{surefireArgLine} @{argLine} -Xmx512m</argLine>
                 </configuration>
             </plugin>
             <plugin>

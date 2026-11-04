@@ -2,7 +2,7 @@
 
 <img src="docs/logo.svg" alt="QuarkForge logo" align="right" width="128" height="128" />
 
-[![Maven Central](https://img.shields.io/maven-central/v/io.github.foundry4j/QuarkForge?logo=apachemaven&color=blue)](https://central.sonatype.com/artifact/io.github.foundry4j/QuarkForge)
+[![Maven Central](https://img.shields.io/maven-central/v/io.github.foundry4j/quarkforge-core?logo=apachemaven&color=blue)](https://central.sonatype.com/artifact/io.github.foundry4j/quarkforge-core)
 ![Java 27+](https://img.shields.io/badge/Java-27%2B-ED8B00?logo=openjdk&logoColor=white)
 [![Quarkus 3.40](https://img.shields.io/badge/Quarkus-3.40-blue)](https://img.shields.io/badge/Quarkus-3.40-blue)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green)](https://opensource.org/license/mit)
