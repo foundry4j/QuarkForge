@@ -127,7 +127,7 @@ public final class CacheKeyResolver {
         String getter = "get" + Character.toUpperCase(property.charAt(0)) + property.substring(1);
         try {
             return target.getClass().getMethod(getter).invoke(target);
-        } catch (NoSuchMethodException ignored) {
+        } catch (NoSuchMethodException _) {
         } catch (Exception e) {
             throw new BizException(io.github.foundry4j.quarkforge.core.api.CommonErrorCode.PARAM_ERROR,
                     "读取缓存键属性失败: " + property);
@@ -135,7 +135,7 @@ public final class CacheKeyResolver {
         String isser = "is" + Character.toUpperCase(property.charAt(0)) + property.substring(1);
         try {
             return target.getClass().getMethod(isser).invoke(target);
-        } catch (NoSuchMethodException ignored) {
+        } catch (NoSuchMethodException _) {
         } catch (Exception e) {
             throw new BizException(io.github.foundry4j.quarkforge.core.api.CommonErrorCode.PARAM_ERROR,
                     "读取缓存键属性失败: " + property);
@@ -144,7 +144,7 @@ public final class CacheKeyResolver {
         try {
             var field = target.getClass().getField(property);
             return field.get(target);
-        } catch (NoSuchFieldException ignored) {
+        } catch (NoSuchFieldException _) {
         } catch (Exception e) {
             throw new BizException(io.github.foundry4j.quarkforge.core.api.CommonErrorCode.PARAM_ERROR,
                     "读取缓存键字段失败: " + property);
@@ -153,7 +153,7 @@ public final class CacheKeyResolver {
         try {
             var accessor = target.getClass().getMethod(property);
             return accessor.invoke(target);
-        } catch (NoSuchMethodException ignored) {
+        } catch (NoSuchMethodException _) {
         } catch (Exception e) {
             throw new BizException(io.github.foundry4j.quarkforge.core.api.CommonErrorCode.PARAM_ERROR,
                     "读取缓存键 record 访问器失败: " + property);

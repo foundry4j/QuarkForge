@@ -119,7 +119,7 @@ public final class ExcelExporter {
             } catch (IOException e) {
                 throw new BizException(CommonErrorCode.INTERNAL_ERROR, "导出 Excel 失败", e);
             }
-        } catch (IOException ignored) {
+        } catch (IOException _) {
             // 关闭失败不影响已写出的内容
         }
         // close() also disposes the temporary files created by SXSSF

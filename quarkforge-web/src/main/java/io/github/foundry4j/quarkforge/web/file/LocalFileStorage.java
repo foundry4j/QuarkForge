@@ -186,7 +186,7 @@ public class LocalFileStorage implements FileStorage {
     private void deleteQuietly(Path path) {
         try {
             Files.deleteIfExists(path);
-        } catch (IOException ignored) {
+        } catch (IOException _) {
             // 清理失败不影响主流程，后续可人工清理
         }
     }

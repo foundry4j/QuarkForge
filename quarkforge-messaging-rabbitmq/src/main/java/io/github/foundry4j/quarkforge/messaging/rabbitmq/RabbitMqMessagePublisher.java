@@ -1,15 +1,5 @@
 package io.github.foundry4j.quarkforge.messaging.rabbitmq;
 
-import java.util.Objects;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
-
-import jakarta.annotation.PostConstruct;
-import jakarta.annotation.PreDestroy;
-import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.inject.Inject;
-import org.eclipse.microprofile.config.inject.ConfigProperty;
-import org.jboss.logging.Logger;
 import io.github.foundry4j.quarkforge.messaging.MessageEnvelope;
 import io.github.foundry4j.quarkforge.messaging.MessagePublisher;
 import io.vertx.core.Future;
@@ -17,6 +7,16 @@ import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.rabbitmq.RabbitMQClient;
 import io.vertx.rabbitmq.RabbitMQOptions;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
+import org.jboss.logging.Logger;
+
+import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 
 /// ## RabbitMqMessagePublisher
 /// RabbitMQ 消息发布实现，启动时创建 Vert.x RabbitMQ 客户端，并按需声明交换机。
@@ -77,7 +77,7 @@ public class RabbitMqMessagePublisher implements MessagePublisher {
         if (message.destination() == null || message.destination().isBlank()) {
             throw new IllegalArgumentException("消息 destination 不能为空");
         }
-        return ensurePrepared().thenCompose(ignored -> send(message));
+        return ensurePrepared().thenCompose(_ -> send(message));
     }
 
     /// 懒初始化：首次投递时确认 publisher confirms 与声明交换机。
@@ -97,7 +97,7 @@ public class RabbitMqMessagePublisher implements MessagePublisher {
         CompletableFuture<Void> prepared = new CompletableFuture<>();
         Future<Void> stage = publisherConfirms ? client.confirmSelect() : Future.succeededFuture();
         if (declareExchange && exchange != null && !exchange.isBlank()) {
-            stage = stage.compose(ignored -> client.exchangeDeclare(exchange, exchangeType, true, false));
+            stage = stage.compose(_ -> client.exchangeDeclare(exchange, exchangeType, true, false));
         }
         stage.onComplete(result -> {
             if (result.succeeded()) {
@@ -118,7 +118,7 @@ public class RabbitMqMessagePublisher implements MessagePublisher {
                 RabbitMqMessages.toProperties(message),
                 Buffer.buffer(message.payload()));
         if (publisherConfirms) {
-            published = published.compose(ignored -> client.waitForConfirms());
+            published = published.compose(_ -> client.waitForConfirms());
         }
         return published.toCompletionStage();
     }

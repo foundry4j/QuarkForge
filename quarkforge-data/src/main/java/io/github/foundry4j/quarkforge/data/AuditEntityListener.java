@@ -130,7 +130,7 @@ public class AuditEntityListener {
             session.getActionQueue().registerCallback(
                     (_, _) -> discardPending());
             REGISTERED.set(true);
-        } catch (RuntimeException ignored) {
+        } catch (RuntimeException _) {
             // 没有可用的 Hibernate Session 时退化为不审计，避免影响业务事务
         }
     }
@@ -182,7 +182,7 @@ public class AuditEntityListener {
                 try {
                     field.setAccessible(true);
                     values.put(field.getName(), stringify(field.get(entity)));
-                } catch (ReflectiveOperationException | RuntimeException ignored) {
+                } catch (ReflectiveOperationException | RuntimeException _) {
                     // 反射失败时跳过该字段，不影响其他字段审计
                 }
             }
