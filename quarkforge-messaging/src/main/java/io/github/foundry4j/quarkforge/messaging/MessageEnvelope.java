@@ -1,6 +1,7 @@
 package io.github.foundry4j.quarkforge.messaging;
 
 import java.time.Instant;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
@@ -45,7 +46,7 @@ public record MessageEnvelope(
 
     /// 复制一条消息并追加一个消息头。
     public MessageEnvelope withHeader(String name, String value) {
-        Map<String, String> merged = new java.util.HashMap<>(headers);
+        Map<String, String> merged = new HashMap<>(headers);
         merged.put(name, value);
         return new MessageEnvelope(messageId, destination, payload, merged, occurredAt);
     }
