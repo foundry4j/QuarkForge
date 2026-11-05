@@ -14,6 +14,7 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.function.Supplier;
 
 /// ## LocalCacheService
@@ -198,7 +199,7 @@ public class LocalCacheService implements CacheService {
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new RuntimeException(e);
-        } catch (java.util.concurrent.ExecutionException e) {
+        } catch (ExecutionException e) {
             if (e.getCause() instanceof RuntimeException re) throw re;
             if (e.getCause() instanceof Error err) throw err;
             throw new RuntimeException(e.getCause());
