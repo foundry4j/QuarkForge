@@ -42,6 +42,7 @@
         <module>quarkforge-crypto</module>
         <module>quarkforge-cache</module>
         <module>quarkforge-dict</module>
+        <module>quarkforge-excel</module>
         <module>quarkforge-migration</module>
         <module>quarkforge-security</module>
         <module>quarkforge-redis</module>
@@ -68,6 +69,7 @@
 
         <maven-compiler-plugin.version>3.16.0</maven-compiler-plugin.version>
         <maven-surefire-plugin.version>3.6.0</maven-surefire-plugin.version>
+        <poi.version>5.4.1</poi.version>
         <maven-jar-plugin.version>3.4.2</maven-jar-plugin.version>
         <maven-javadoc-plugin.version>3.12.0</maven-javadoc-plugin.version>
         <maven-gpg-plugin.version>3.2.8</maven-gpg-plugin.version>
@@ -127,6 +129,11 @@
             <dependency>
                 <groupId>io.github.foundry4j</groupId>
                 <artifactId>quarkforge-dict</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.github.foundry4j</groupId>
+                <artifactId>quarkforge-excel</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>

@@ -24,6 +24,7 @@ A modular rapid microservice development framework based on Quarkus, with built-
 | `quarkforge-crypto` | Encryption & masking | AES-256-GCM `CryptoService`, `EncryptedStringConverter` field encryption, `@Sensitive` response masking (`138****0000`) |
 | `quarkforge-cache` | Local cache | `CacheService` SPI, Caffeine default implementation, `@Cacheable`/`@CacheEvict` annotations, built-in Bloom-filter penetration guard and single-flight breakdown guard |
 | `quarkforge-dict` | Dictionary & metadata | Multi-tenant dict types/items, cached lookups, value→label translation, hierarchical dictionaries via `parentValue` |
+| `quarkforge-excel` | Excel / CSV import & export | Streaming xlsx/CSV reading, row-level validation with error rows, SXSSF streaming export, REST upload/download helpers |
 | `quarkforge-migration` | Database migration | Flyway starter that automatically runs versioned scripts under `db/migration` at application startup |
 | `quarkforge-security` | Security & authentication | `JwtTokenService` token issuance, `AuthContext` current-user resolution, `LoginUser` |
 | `quarkforge-ratelimit` | Rate limiting | `@RateLimit` annotation, in-memory fixed-window default implementation, `RateLimiter` SPI |
@@ -413,6 +414,67 @@ Notes:
 - Reads are cached per tenant; any write through `DictService` evicts both the enabled-only and the full view, so callers never see stale labels.
 - `parentValue` supports hierarchical dictionaries (province → city, category → subcategory).
 - Cache TTL: `quarkforge.dict.cache-ttl=PT10M` (default 10 minutes).
+
+### Excel / CSV Import & Export (excel)
+
+Both directions are streaming — memory usage does not grow with the number of rows. Reading uses the POI SAX event model for `.xlsx` and a character-level parser for CSV (quoted commas, embedded newlines, `""` escapes, UTF-8 BOM). Export uses `SXSSFWorkbook` with a sliding row window, flushing to temporary files as it goes.
+
+```java
+List<User> users = new ArrayList<>();
+ImportResult result = ExcelImporter.importData(in, ExcelFormat.XLSX,
+        ExcelImportSpec.<User>builder()
+                .mapper(row -> new User(
+                        row.cell("id"),
+                        row.cell("name"),
+                        Integer.parseInt(row.cell("age"))))
+                .validator((user, ctx) -> {
+                    if (user.name().isBlank()) {
+                        ctx.reject("name", user.name(), "name is required");
+                    }
+                    if (user.age() < 1 || user.age() > 120) {
+                        ctx.reject("age", String.valueOf(user.age()), "age out of range");
+                    }
+                })
+                .rowSink(users::add)     // successful rows are consumed one by one
+                .maxErrors(500)
+                .build());
+```
+
+Mapping or validation failures never abort the whole file. `ImportResult` carries `totalRows`, `successRows`, `failedRows`, `errors`, and `errorsTruncated`; each `RowError` contains `rowNumber`, `field`, `value`, `message`, and the original `rowValues`, so the client can highlight or re-export the offending rows.
+
+```java
+ExcelExporter.write(out, ExcelFormat.XLSX,
+        ExcelExportSpec.<Order>builder("Orders")
+                .column("Order No", Order::orderNo)
+                .column("Amount", Order::amount, 16)
+                .windowSize(100)
+                .build(),
+        orderStream);
+```
+
+REST helpers stream straight to the response and avoid buffering the whole file:
+
+```java
+@GET
+@Path("/export")
+public Response export() {
+    return ExcelHttp.download("orders.xlsx", spec, orderService.streamAll());
+}
+
+@POST
+@Path("/import")
+@Consumes(MediaType.MULTIPART_FORM_DATA)
+public ImportResult importUsers(@RestForm FileUpload file) {
+    return ExcelHttp.importUpload(file, spec);
+}
+```
+
+Notes:
+
+- Supported inputs: `.xlsx` / `.xlsm` and `.csv`; legacy `.xls` must be converted first.
+- CSV defaults to UTF-8; configure another charset with `ExcelImportSpec.Builder#charset`.
+- `maxErrors(0)` means unlimited error collection — use it only for small files.
+- The export window (`windowSize`) trades temporary disk usage for memory; 100 rows is a good default.
 
 ### Security & Authentication (security)
 
