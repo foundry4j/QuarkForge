@@ -14,6 +14,8 @@ import java.util.Arrays;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 /// ## ExpressionIdempotentKeyResolver
 /// 默认幂等键解析器。
@@ -57,9 +59,9 @@ public class ExpressionIdempotentKeyResolver implements IdempotentKeyResolver {
     }
 
     private Map<String, Object> buildNameIndex(Parameter[] parameters, Object[] args) {
-        return java.util.stream.IntStream.range(0, parameters.length)
+        return IntStream.range(0, parameters.length)
                 .boxed()
-                .collect(java.util.stream.Collectors.toMap(
+                .collect(Collectors.toMap(
                         i -> parameters[i].getName(),
                         i -> args[i],
                         (_, b) -> b));
