@@ -1,11 +1,11 @@
 package io.github.foundry4j.quarkforge.cache;
 
-import java.time.Duration;
-import java.util.concurrent.atomic.AtomicInteger;
-
+import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
 import org.junit.jupiter.api.Test;
-import io.quarkus.test.junit.QuarkusTest;
+
+import java.time.Duration;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;

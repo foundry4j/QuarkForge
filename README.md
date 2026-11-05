@@ -22,7 +22,7 @@ A modular rapid microservice development framework based on Quarkus, with built-
 | `quarkforge-data` | Data access | `BaseEntity` (snowflake ID + audit timestamps), `BaseRepository` (pagination straight to `PageResult`), `TenantEntity` multi-tenant auto-filtering, `SoftDeleteEntity`/`SoftDeleteRepository` soft delete with recycle bin, `AuditSupport` audit SPI |
 | `quarkforge-audit` | Audit logging | Automatically records create/update/delete operations with field-level diffs on updates (e.g. price 100 → 120), `AuditLog` persistence, operator resolution |
 | `quarkforge-crypto` | Encryption & masking | AES-256-GCM `CryptoService`, `EncryptedStringConverter` field encryption, `@Sensitive` response masking (`138****0000`) |
-| `quarkforge-cache` | Local cache | `CacheService` SPI, Caffeine default implementation (per-entry TTL, capacity limit) |
+| `quarkforge-cache` | Local cache | `CacheService` SPI, Caffeine default implementation, `@Cacheable`/`@CacheEvict` annotations, built-in Bloom-filter penetration guard and single-flight breakdown guard |
 | `quarkforge-dict` | Dictionary & metadata | Multi-tenant dict types/items, cached lookups, value→label translation, hierarchical dictionaries via `parentValue` |
 | `quarkforge-migration` | Database migration | Flyway starter that automatically runs versioned scripts under `db/migration` at application startup |
 | `quarkforge-security` | Security & authentication | `JwtTokenService` token issuance, `AuthContext` current-user resolution, `LoginUser` |
@@ -323,14 +323,63 @@ quarkus.jobrunr.dashboard.port=8000
 
 ### Caching (cache / redis)
 
+`CacheService` SPI backed by Caffeine by default. Every local cache gets three anti-anomaly protections out of the box when used through the declarative annotations or through `LocalCacheService.computeProtected`:
+
+- **Bloom filter** — short-circuits known-miss keys before the cache query
+- **Single-flight gate** — concurrent requests on the same key share one loader call
+- **Null-value caching** — loader returning `null` is written as a short-lived sentinel to stop penetration
+
 ```java
 @Inject CacheService cache;
 
-// Without Redis: Caffeine local cache
+// SPI usage — no protection
 cache.getOrLoad("user:" + id, User.class, Duration.ofMinutes(10), () -> load(id));
 
-// After adding quarkforge-redis, it automatically switches to a two-level cache: local → Redis → loader
+// Declarative — protection enabled automatically on LocalCacheService
+@Cacheable(key = "#p0", namespace = "user", ttl = "PT10M")
+public User getUser(long id) { ... }
+
+@CacheEvict(key = "#p0", namespace = "user")          // after method success
+public void updateUser(long id, UserPatch patch) { ... }
 ```
+
+Supported key expressions inside the annotation (no SpEL dependency):
+
+| Form | Meaning |
+|------|---------|
+| `'literal'` | String literal |
+| `#p0`, `#p1`, … | Positional method argument |
+| `#p0.field` | Bean property of the argument |
+| `#p0.method()` | Zero-arg method on the argument |
+| `#root.methodName` | Name of the annotated method |
+| `'prefix/' + #p0` | Concatenation (split on `+` and rejoin) |
+| (empty) | Default = `ClassName#methodName(args)` |
+
+Annotation attributes:
+
+| Attribute | Default | Purpose |
+|-----------|---------|---------|
+| `key` | auto | Cache key expression |
+| `namespace` | `""` | Namespace prefix (`qf:cache:{ns}:{key}`) |
+| `ttl` | `PT5M` | ISO-8601 duration; overrides `quarkforge.cache.local.default-ttl` |
+| `cacheNull` | `true` | Cache loader `null` with short TTL (`quarkforge.cache.local.null-value-ttl`) |
+| `preventPenetration` | `true` | Use Bloom filter (only `LocalCacheService`) |
+| `preventBreakdown` | `true` | Use single-flight gate (only `LocalCacheService`) |
+
+Configuration:
+
+```properties
+quarkforge.cache.local.max-size=10000
+quarkforge.cache.local.default-ttl=PT5M
+quarkforge.cache.local.null-value-ttl=PT1M          # short TTL for negative cache
+quarkforge.cache.local.bloom.enabled=true
+quarkforge.cache.local.bloom.expected-insertions=100000
+quarkforge.cache.local.bloom.false-positive-rate=0.01
+```
+
+After adding `quarkforge-redis`, the default bean switches to `RedisTwoLevelCacheService`; two-level cache inherits the SPI but the Bloom / single-flight protections stay at the local layer, which is usually sufficient for hot-key shielding while Redis handles distribution.
+
+The interceptor degrades gracefully when the active `CacheService` is not a `LocalCacheService` — it still caches through `getOrLoad`, but bloom + single-flight are skipped.
 
 ### Dictionary & Metadata (dict)
 

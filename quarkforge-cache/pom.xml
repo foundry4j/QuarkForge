@@ -13,6 +13,10 @@
 
     <dependencies>
         <dependency>
+            <groupId>io.github.foundry4j</groupId>
+            <artifactId>quarkforge-core</artifactId>
+        </dependency>
+        <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-arc</artifactId>
         </dependency>
