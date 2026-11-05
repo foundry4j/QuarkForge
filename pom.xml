@@ -41,6 +41,7 @@
         <module>quarkforge-audit</module>
         <module>quarkforge-crypto</module>
         <module>quarkforge-cache</module>
+        <module>quarkforge-dict</module>
         <module>quarkforge-migration</module>
         <module>quarkforge-security</module>
         <module>quarkforge-redis</module>
@@ -121,6 +122,11 @@
             <dependency>
                 <groupId>io.github.foundry4j</groupId>
                 <artifactId>quarkforge-cache</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.github.foundry4j</groupId>
+                <artifactId>quarkforge-dict</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>

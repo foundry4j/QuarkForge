@@ -23,6 +23,7 @@ A modular rapid microservice development framework based on Quarkus, with built-
 | `quarkforge-audit` | Audit logging | Automatically records create/update/delete operations with field-level diffs on updates (e.g. price 100 → 120), `AuditLog` persistence, operator resolution |
 | `quarkforge-crypto` | Encryption & masking | AES-256-GCM `CryptoService`, `EncryptedStringConverter` field encryption, `@Sensitive` response masking (`138****0000`) |
 | `quarkforge-cache` | Local cache | `CacheService` SPI, Caffeine default implementation (per-entry TTL, capacity limit) |
+| `quarkforge-dict` | Dictionary & metadata | Multi-tenant dict types/items, cached lookups, value→label translation, hierarchical dictionaries via `parentValue` |
 | `quarkforge-migration` | Database migration | Flyway starter that automatically runs versioned scripts under `db/migration` at application startup |
 | `quarkforge-security` | Security & authentication | `JwtTokenService` token issuance, `AuthContext` current-user resolution, `LoginUser` |
 | `quarkforge-ratelimit` | Rate limiting | `@RateLimit` annotation, in-memory fixed-window default implementation, `RateLimiter` SPI |
@@ -330,6 +331,39 @@ cache.getOrLoad("user:" + id, User.class, Duration.ofMinutes(10), () -> load(id)
 
 // After adding quarkforge-redis, it automatically switches to a two-level cache: local → Redis → loader
 ```
+
+### Dictionary & Metadata (dict)
+
+Stores enum-like reference data (gender, order status, units, …) so business tables keep only a short value while the UI renders a localized label. Every dictionary is tenant-scoped, cached, and read through the `CacheService` SPI.
+
+```java
+@Inject DictService dict;
+
+List<DictItemView> statuses = dict.items("order_status");        // enabled items, ordered by sort
+String label = dict.label("gender", "M");                        // "男", also works for disabled items
+Map<String, String> mapping = dict.translate("order_status");    // value → label
+```
+
+Manage dictionaries over REST:
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/dict/types?keyword=&enabled=&page=&size=` | Page through dictionary types |
+| POST | `/dict/types` | Create a dictionary type |
+| PUT | `/dict/types/{id}` | Rename/disable a type (the code is immutable) |
+| DELETE | `/dict/types/{id}` | Delete a type together with its items |
+| GET | `/dict/{typeCode}/items?enabled=false` | List items, optionally including disabled ones |
+| POST | `/dict/{typeCode}/items` | Add an item |
+| PUT | `/dict/items/{id}` | Update an item |
+| DELETE | `/dict/items/{id}` | Delete an item |
+| GET | `/dict/{typeCode}/translate` | Full value → label mapping |
+
+Notes:
+
+- `(tenant_id, code)` and `(tenant_id, type_code, item_value)` are unique, so duplicate codes or values return `409 {"code":40900}`.
+- Reads are cached per tenant; any write through `DictService` evicts both the enabled-only and the full view, so callers never see stale labels.
+- `parentValue` supports hierarchical dictionaries (province → city, category → subcategory).
+- Cache TTL: `quarkforge.dict.cache-ttl=PT10M` (default 10 minutes).
 
 ### Security & Authentication (security)
 
