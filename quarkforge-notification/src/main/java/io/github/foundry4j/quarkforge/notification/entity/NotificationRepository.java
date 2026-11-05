@@ -5,6 +5,7 @@ import io.github.foundry4j.quarkforge.data.BaseRepository;
 import jakarta.enterprise.context.ApplicationScoped;
 
 import java.time.Instant;
+import java.util.List;
 
 /// ## NotificationRepository
 /// 通知仓储：查询按「接收人 + 时间」降序返回，未读数与推送补偿查询走
@@ -34,7 +35,7 @@ public class NotificationRepository extends BaseRepository<Notification> {
     }
 
     /// 当前用户所有未推送通知。
-    public java.util.List<Notification> findUndelivered(String recipientId) {
+    public List<Notification> findUndelivered(String recipientId) {
         return list("recipientId = ?1 and deliveredAt is null order by createdAt asc", recipientId);
     }
 
@@ -48,7 +49,7 @@ public class NotificationRepository extends BaseRepository<Notification> {
 
     /// 批量已读，返回更新的条数。
     public int markAllRead(String recipientId) {
-        java.util.List<Notification> unread = list("recipientId = ?1 and readAt is null", recipientId);
+        List<Notification> unread = list("recipientId = ?1 and readAt is null", recipientId);
         Instant now = Instant.now();
         for (Notification n : unread) {
             n.readAt = now;

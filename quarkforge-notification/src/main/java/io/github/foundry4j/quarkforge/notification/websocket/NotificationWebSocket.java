@@ -1,9 +1,5 @@
 package io.github.foundry4j.quarkforge.notification.websocket;
 
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-
 import io.github.foundry4j.quarkforge.notification.entity.Notification;
 import io.github.foundry4j.quarkforge.notification.entity.NotificationRepository;
 import io.quarkus.websockets.next.OnClose;
@@ -11,7 +7,12 @@ import io.quarkus.websockets.next.OnOpen;
 import io.quarkus.websockets.next.OnTextMessage;
 import io.quarkus.websockets.next.WebSocket;
 import io.quarkus.websockets.next.WebSocketConnection;
+import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+
+import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 /// ## NotificationWebSocket
 /// 实时通知推送端点。前端连接 `/ws/notifications`（或 `/ws/notifications?userId=<id>`）后，
@@ -81,7 +82,7 @@ public class NotificationWebSocket {
 
     /// ## SessionManager
     /// 会话注册表与推送桥梁 Bean（public 以便 [io.github.foundry4j.quarkforge.notification.service.NotificationService] 注入）。
-    @jakarta.enterprise.context.ApplicationScoped
+    @ApplicationScoped
     public static class SessionManager {
 
         private static final ConcurrentMap<String, WebSocketConnection> SESSIONS = new ConcurrentHashMap<>();
@@ -128,7 +129,7 @@ public class NotificationWebSocket {
 
         /// 补发给定用户所有未推送通知（`deliveredAt is null`）。
         private void deliverUndelivered(String userId) {
-            java.util.List<Notification> undelivered = repository.findUndelivered(userId);
+            List<Notification> undelivered = repository.findUndelivered(userId);
             for (Notification n : undelivered) {
                 if (pushTo(userId, serialize(n))) {
                     repository.markDelivered(n.id);
