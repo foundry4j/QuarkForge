@@ -1,10 +1,10 @@
 package io.github.foundry4j.quarkforge.ratelimit;
 
+import io.quarkus.arc.DefaultBean;
+import jakarta.enterprise.context.ApplicationScoped;
+
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-
-import jakarta.enterprise.context.ApplicationScoped;
-import io.quarkus.arc.DefaultBean;
 
 /// ## InMemoryRateLimiter
 /// 基于内存固定窗口的默认限流实现，适用于单机部署。
@@ -29,7 +29,7 @@ public class InMemoryRateLimiter implements RateLimiter {
     public boolean tryAcquire(String key, int permits, long windowSeconds) {
         long now = System.currentTimeMillis();
         long windowMillis = windowSeconds * 1000;
-        Window window = windows.compute(key, (k, current) -> {
+        Window window = windows.compute(key, (_, current) -> {
             if (current == null || now - current.startMillis >= windowMillis) {
                 Window fresh = new Window(now);
                 fresh.count = 1;
