@@ -1,12 +1,12 @@
 package io.github.foundry4j.quarkforge.messaging;
 
-import java.util.Map;
-import java.util.concurrent.CompletionStage;
-
-import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.inject.Inject;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
+
+import java.util.Map;
+import java.util.concurrent.CompletionStage;
 
 /// ## JsonMessagePublisher
 /// 在 [MessagePublisher] 之上提供对象入参的便捷门面，负责把业务对象序列化为 JSON。
