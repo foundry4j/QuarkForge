@@ -56,8 +56,9 @@
         <module>quarkforge-scheduler</module>
         <module>quarkforge-notification</module>
         <module>quarkforge-observability</module>
-        <module>examples/user-service</module>
-        <module>examples/order-service</module>
+        <module>quarkforge-test</module>
+        <!-- <module>examples/user-service</module> -->
+        <!-- <module>examples/order-service</module> -->
     </modules>
 
     <properties>
@@ -201,6 +202,11 @@
             <dependency>
                 <groupId>io.github.foundry4j</groupId>
                 <artifactId>quarkforge-notification</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.github.foundry4j</groupId>
+                <artifactId>quarkforge-test</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
