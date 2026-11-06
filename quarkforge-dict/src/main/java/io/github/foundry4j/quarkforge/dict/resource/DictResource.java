@@ -7,6 +7,7 @@ import io.github.foundry4j.quarkforge.dict.dto.DictItemView;
 import io.github.foundry4j.quarkforge.dict.dto.DictTypeRequest;
 import io.github.foundry4j.quarkforge.dict.entity.DictItem;
 import io.github.foundry4j.quarkforge.dict.entity.DictType;
+import io.github.foundry4j.quarkforge.dict.mapper.DictMapper;
 import io.github.foundry4j.quarkforge.dict.service.DictService;
 import io.github.foundry4j.quarkforge.web.api.PageQuery;
 import jakarta.inject.Inject;
@@ -43,6 +44,9 @@ public class DictResource {
 
     @Inject
     DictService dictService;
+
+    @Inject
+    DictMapper mapper;
 
     // ---------- 字典类型 ----------
 
@@ -89,14 +93,14 @@ public class DictResource {
     public Result<DictItemView> createItem(@PathParam("typeCode") String typeCode,
                                            @Valid DictItemRequest request) {
         DictItem item = dictService.createItem(typeCode, request);
-        return Result.ok(DictItemView.from(item));
+        return Result.ok(mapper.toView(item));
     }
 
     @PUT
     @Path("/items/{id}")
     public Result<DictItemView> updateItem(@PathParam("id") long id, @Valid DictItemRequest request) {
         DictItem item = dictService.updateItem(id, request);
-        return Result.ok(DictItemView.from(item));
+        return Result.ok(mapper.toView(item));
     }
 
     @DELETE

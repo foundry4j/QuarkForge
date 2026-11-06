@@ -13,6 +13,7 @@ import io.github.foundry4j.quarkforge.dict.entity.DictItem;
 import io.github.foundry4j.quarkforge.dict.entity.DictItemRepository;
 import io.github.foundry4j.quarkforge.dict.entity.DictType;
 import io.github.foundry4j.quarkforge.dict.entity.DictTypeRepository;
+import io.github.foundry4j.quarkforge.dict.mapper.DictMapper;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
@@ -47,6 +48,9 @@ public class DictService {
 
     @Inject
     CacheService cache;
+
+    @Inject
+    DictMapper mapper;
 
     @Inject
     @ConfigProperty(name = "quarkforge.dict.cache-ttl", defaultValue = "PT10M")
@@ -188,7 +192,7 @@ public class DictService {
     private DictItemView[] loadItems(String code, boolean onlyEnabled) {
         typeRepository.requireByCode(code);
         return itemRepository.listByType(code, onlyEnabled).stream()
-                .map(DictItemView::from)
+                .map(mapper::toView)
                 .toArray(DictItemView[]::new);
     }
 
