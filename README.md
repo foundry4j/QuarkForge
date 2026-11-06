@@ -35,7 +35,7 @@ A modular rapid microservice development framework based on Quarkus, with built-
 | `quarkforge-rpc` | RPC communication | gRPC infrastructure: `BizException` ↔ gRPC status mapping with error-code trailers, traceId propagation interceptors, built-in `Echo` diagnostics service |
 | `quarkforge-scheduler` | Job scheduling | JobRunr integration with in-memory storage (standalone) and SQL storage (distributed), built-in dashboard |
 | `quarkforge-notification` | Notification center | Multi-tenant notification persistence, `NotificationSender` SPI for business modules to decouple from delivery concerns, REST API, and WebSocket real-time push |
-| `quarkforge-redis` | Redis integration | `RedisCacheService` cache-aside, `RedisTwoLevelCacheService` local + Redis two-level cache, `RedisLockService` distributed locks, Redis backends for rate limiting and idempotency (auto-takeover) |
+| `quarkforge-redis` | Redis integration | `RedisCacheService` cache-aside, `RedisTwoLevelCacheService` local + Redis two-level cache, `RedisLockService` distributed locks with `@DistributedLock` annotation (SpEL keys, wait/retry, lease), Redis backends for rate limiting and idempotency (auto-takeover) |
 | `quarkforge-observability` | Observability | OpenAPI/Swagger UI (built-in bearerAuth scheme), `/q/health` health checks, `/q/metrics` Prometheus metrics |
 
 Modules are pulled in on demand with no forced coupling; `core` has no Quarkus extension dependencies and can be used standalone in non-web scenarios.
