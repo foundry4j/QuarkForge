@@ -499,6 +499,41 @@ mp.jwt.verify.publickey.location=jwt/publicKey.pem
 mp.jwt.verify.issuer=quarkforge
 ```
 
+#### RBAC Authorization (@RequiresRole / @RequiresPermission)
+
+Declare role/permission requirements on resource classes or methods; the framework validates them before the method runs:
+
+```java
+@Path("/admin/users")
+@RequiresRole("admin")                       // class-level: every method requires the admin role
+public class UserAdminResource {
+
+    @GET
+    @RequiresPermission("user:list")         // role check passes AND the user:list permission is required
+    public Result<List<UserVO>> list() { ... }
+
+    @DELETE
+    @Path("/{id}")
+    @RequiresRole(value = {"admin", "ops"}, logical = Logical.ALL)  // method-level overrides the class-level role rule
+    @RequiresPermission("user:delete")
+    public Result<Void> delete(@PathParam("id") Long id) { ... }
+}
+```
+
+- `value` accepts multiple entries combined with `logical = Logical.ANY` (default, any one suffices) or `Logical.ALL` (all required).
+- A method-level `@RequiresRole` overrides the class-level one; `@RequiresPermission` follows the same rule. When a method declares both, role and permission are checked independently.
+- Unauthenticated access throws `401 UNAUTHORIZED`; missing roles/permissions throw `403 FORBIDDEN` with the missing items in the message, mapped to the unified `Result` by the web layer.
+- Roles come from the JWT `groups` claim and permissions from the `perms` claim. Issue tokens carrying both at login:
+
+```java
+String token = jwt.issue(user.id.toString(), user.name,
+        Set.of("admin"),                       // roles
+        Set.of("user:list", "user:delete"));   // permissions
+```
+
+- For programmatic checks inside business logic, use `auth.hasPermission("user:delete")` / `auth.currentUser().hasPermission(...)`; both return `false` for anonymous callers.
+- The mapping between users, roles and permissions is owned by your business side (e.g. loaded from the database at login); the framework only carries and validates the claims.
+
 ### Rate Limiting (ratelimit)
 
 ```java
