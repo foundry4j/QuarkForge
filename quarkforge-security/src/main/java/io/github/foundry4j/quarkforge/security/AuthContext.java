@@ -1,13 +1,15 @@
 package io.github.foundry4j.quarkforge.security;
 
-import java.util.Set;
-
-import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.inject.Inject;
-import org.eclipse.microprofile.jwt.JsonWebToken;
 import io.github.foundry4j.quarkforge.core.api.CommonErrorCode;
 import io.github.foundry4j.quarkforge.core.exception.BizException;
 import io.quarkus.security.identity.SecurityIdentity;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
+import org.eclipse.microprofile.jwt.JsonWebToken;
+
+import java.util.Collection;
+import java.util.LinkedHashSet;
+import java.util.Set;
 
 /// ## AuthContext
 /// 当前请求认证上下文。在业务代码中直接注入使用：
@@ -30,10 +32,14 @@ public class AuthContext {
         }
         String username = identity.getPrincipal().getName();
         String id = username;
-        if (identity.getPrincipal() instanceof JsonWebToken jwt && jwt.getSubject() != null) {
-            id = jwt.getSubject();
+        Set<String> permissions = Set.of();
+        if (identity.getPrincipal() instanceof JsonWebToken jwt) {
+            if (jwt.getSubject() != null) {
+                id = jwt.getSubject();
+            }
+            permissions = claimStrings(jwt, JwtTokenService.PERMISSIONS_CLAIM);
         }
-        return new LoginUser(id, username, Set.copyOf(identity.getRoles()));
+        return new LoginUser(id, username, Set.copyOf(identity.getRoles()), permissions);
     }
 
     /// 是否已认证。
@@ -49,5 +55,27 @@ public class AuthContext {
     /// 当前用户是否拥有指定角色。
     public boolean hasRole(String role) {
         return identity.hasRole(role);
+    }
+
+    /// 当前用户是否拥有指定权限，未认证时返回 `false`。
+    public boolean hasPermission(String permission) {
+        if (identity.isAnonymous()) {
+            return false;
+        }
+        return currentUser().hasPermission(permission);
+    }
+
+    /// 解析字符串数组类型的自定义 claim（SmallRye JWT 将 JSON 数组反序列化为 `List`）。
+    private static Set<String> claimStrings(JsonWebToken jwt, String name) {
+        Object claim = jwt.getClaim(name);
+        if (claim instanceof Collection<?> values) {
+            Set<String> result = new LinkedHashSet<>();
+            values.forEach(value -> result.add(String.valueOf(value)));
+            return Set.copyOf(result);
+        }
+        if (claim instanceof String single && !single.isBlank()) {
+            return Set.of(single);
+        }
+        return Set.of();
     }
 }
