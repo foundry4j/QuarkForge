@@ -25,7 +25,8 @@ public enum CommonErrorCode implements ErrorCode {
     UNSUPPORTED_MEDIA_TYPE(41500, "不支持的媒体类型"),
     TOO_MANY_REQUESTS(42900, "请求过于频繁，请稍后重试"),
     INTERNAL_ERROR(50000, "服务内部错误"),
-    SERVICE_UNAVAILABLE(50300, "服务暂不可用");
+    SERVICE_UNAVAILABLE(50300, "服务暂不可用"),
+    GATEWAY_TIMEOUT(50400, "依赖服务调用超时");
 
     private final int code;
     private final String message;

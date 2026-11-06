@@ -47,6 +47,7 @@
         <module>quarkforge-security</module>
         <module>quarkforge-redis</module>
         <module>quarkforge-ratelimit</module>
+        <module>quarkforge-degrade</module>
         <module>quarkforge-idempotency</module>
         <module>quarkforge-messaging</module>
         <module>quarkforge-messaging-rabbitmq</module>
@@ -155,6 +156,11 @@
             <dependency>
                 <groupId>io.github.foundry4j</groupId>
                 <artifactId>quarkforge-ratelimit</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.github.foundry4j</groupId>
+                <artifactId>quarkforge-degrade</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
