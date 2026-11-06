@@ -6,6 +6,7 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.IntStream;
@@ -82,7 +83,7 @@ class ExcelExporterTest {
         assertTrue(csv.contains("\"line1\nline2\""));
         assertTrue(csv.contains("\"He said \"\"hi\"\"\""));
 
-        List<RowData> parsed = new java.util.ArrayList<>();
+        List<RowData> parsed = new ArrayList<>();
         ExcelReader.read(new ByteArrayInputStream(out.toByteArray()), ExcelFormat.CSV,
                 RowReadOptions.defaults(), parsed::add);
         assertEquals(3, parsed.size());

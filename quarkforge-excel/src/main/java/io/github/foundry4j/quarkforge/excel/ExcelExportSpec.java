@@ -2,6 +2,7 @@ package io.github.foundry4j.quarkforge.excel;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Function;
 
 /// ## ExcelExportSpec
 /// 导出配置：工作表名、列定义与流式写出参数。
@@ -51,12 +52,12 @@ public record ExcelExportSpec<T>(String sheetName, List<Column<T>> columns,
             this.sheetName = sheetName;
         }
 
-        public Builder<T> column(String header, java.util.function.Function<T, Object> getter) {
+        public Builder<T> column(String header, Function<T, Object> getter) {
             columns.add(Column.of(header, getter));
             return this;
         }
 
-        public Builder<T> column(String header, java.util.function.Function<T, Object> getter, int width) {
+        public Builder<T> column(String header, Function<T, Object> getter, int width) {
             columns.add(Column.of(header, getter, width));
             return this;
         }

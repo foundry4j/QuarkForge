@@ -17,11 +17,15 @@ import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.nio.charset.StandardCharsets;
+import java.sql.Timestamp;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.List;
 import java.util.stream.Stream;
 
 /// ## ExcelExporter
@@ -163,7 +167,7 @@ public final class ExcelExporter {
         } else if (value instanceof java.sql.Date date) {
             cell.setCellValue(date.toLocalDate());
             cell.setCellStyle(dateStyle);
-        } else if (value instanceof java.util.Date date) {
+        } else if (value instanceof Date date) {
             cell.setCellValue(LocalDateTime.ofInstant(date.toInstant(), ZoneId.systemDefault()));
             cell.setCellStyle(dateTimeStyle);
         } else if (value instanceof Enum<?> enumValue) {
@@ -189,7 +193,7 @@ public final class ExcelExporter {
                 for (int i = 0; i < values.length; i++) {
                     values[i] = spec.columns().get(i).getter().apply(item);
                 }
-                writeCsvLine(writer, java.util.Arrays.asList(values));
+                writeCsvLine(writer, Arrays.asList(values));
             }
             writer.flush();
         } catch (IOException e) {
@@ -197,7 +201,7 @@ public final class ExcelExporter {
         }
     }
 
-    private static void writeCsvLine(Writer writer, java.util.List<?> values) throws IOException {
+    private static void writeCsvLine(Writer writer, List<?> values) throws IOException {
         for (int i = 0; i < values.size(); i++) {
             if (i > 0) {
                 writer.write(',');
@@ -213,7 +217,7 @@ public final class ExcelExporter {
             case LocalDate date -> DATE_FORMAT.format(date);
             case LocalDateTime dateTime -> DATE_TIME_FORMAT.format(dateTime);
             case Instant instant -> DATE_TIME_FORMAT.format(LocalDateTime.ofInstant(instant, ZoneId.systemDefault()));
-            case java.sql.Timestamp timestamp -> DATE_TIME_FORMAT.format(timestamp.toLocalDateTime());
+            case Timestamp timestamp -> DATE_TIME_FORMAT.format(timestamp.toLocalDateTime());
             case java.sql.Date date -> DATE_FORMAT.format(date.toLocalDate());
             case java.util.Date date -> DATE_TIME_FORMAT.format(date.toInstant().atZone(ZoneId.systemDefault()));
             case Enum<?> enumValue -> enumValue.name();
