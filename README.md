@@ -735,58 +735,57 @@ Works out of the box: Swagger UI at `/q/swagger-ui` (with a built-in JWT bearerA
 
 ## Example Services
 
-Two runnable sample services demonstrate inter-service communication over gRPC:
+`examples/mall-service` is a runnable e-commerce microservice that wires together web / validation / data / audit / cache / security / ratelimit / idempotency / observability.
 
-- `examples/user-service` — a user microservice (web / data / security / ratelimit / observability) that also exposes a `UserService` gRPC endpoint on port `9001`.
-- `examples/order-service` — an order microservice that validates the ordering user by calling user-service over gRPC before persisting an order.
-
-### User Service
-
-`examples/user-service` wires together the web / data / security / ratelimit / observability modules:
+### Mall Service
 
 | Capability | Where it lands in the example |
 |------------|-------------------------------|
-| User CRUD | [UserResource](examples/user-service/src/main/java/io/github/foundry4j/quarkforge/sample/user/UserResource.java) + [UserService](examples/user-service/src/main/java/io/github/foundry4j/quarkforge/sample/user/UserService.java) + [UserRepository](examples/user-service/src/main/java/io/github/foundry4j/quarkforge/sample/user/UserRepository.java) |
-| Unified responses | Resource methods return DTOs directly, automatically wrapped in the `Result` envelope |
-| Exceptions & validation | Duplicate username throws `BizException`; request-body validation failures automatically return 400 |
-| Login & auth | `JwtTokenService` issues JWTs; `/users/me` is protected by `@RolesAllowed` |
-| Rate limiting | Login endpoint: `@RateLimit(permits = 20, windowSeconds = 60)` |
-| gRPC user lookup | [UserGrpcService](examples/user-service/src/main/java/io/github/foundry4j/quarkforge/sample/user/UserGrpcService.java) exposes `GetUser` on port `9001`, delegating to `UserService` |
+| Product management | [ProductResource](examples/mall-service/src/main/java/io/github/foundry4j/quarkforge/sample/mall/product/ProductResource.java) + [ProductService](examples/mall-service/src/main/java/io/github/foundry4j/quarkforge/sample/mall/product/ProductService.java) + [ProductRepository](examples/mall-service/src/main/java/io/github/foundry4j/quarkforge/sample/mall/product/ProductRepository.java) |
+| Inventory | [OrderService](examples/mall-service/src/main/java/io/github/foundry4j/quarkforge/sample/mall/order/OrderService.java) deducts stock atomically on order creation and restores it on cancellation; insufficient stock returns `40000` |
+| Orders | [OrderResource](examples/mall-service/src/main/java/io/github/foundry4j/quarkforge/sample/mall/order/OrderResource.java) + `OrderService`; order items snapshot the product name and price at purchase time |
+| Unified responses & validation | DTOs are wrapped automatically; `@PasswordStrength` / `@Phone` / price and stock constraints are mapped to `400` |
+| JWT RBAC | `JwtTokenService` issues roles plus `perms`; `@RolesAllowed` and `@RequiresPermission` guard endpoints |
+| Cache | Product detail uses `@Cacheable`; updates and stock changes use `@CacheEvict` |
+| Idempotency | `POST /orders` uses `@Idempotent` keyed by user + `requestNo`, so retries return the first result |
+| Operation logs | `@OperationLog` on product and order writes, including failed attempts; query via `GET /admin/operation-logs` |
 | Docs & monitoring | Swagger UI, `/q/health`, `/q/metrics` |
 
 Endpoint overview:
 
 | Method | Path | Description |
 |--------|------|-------------|
-| POST | `/users` | Register a user |
-| GET | `/users?keyword=&page=&size=` | Keyword search with pagination |
-| GET | `/users/{id}` | User details; 404 when not found |
-| PUT | `/users/{id}` | Update profile or status |
-| DELETE | `/users/{id}` | Delete a user (204) |
-| POST | `/auth/login` | Log in to obtain a JWT |
-| GET | `/users/me` | Current logged-in user; requires `Authorization: Bearer <token>` |
+| POST | `/auth/register` | Register a buyer (password strength + optional phone validation) |
+| POST | `/auth/login` | Log in to obtain a JWT (rate limited) |
+| GET | `/users/me` | Current logged-in user |
+| GET | `/products?keyword=&page=&size=` | Product search with pagination (public) |
+| GET | `/products/{id}` | Product detail (public, cached) |
+| POST | `/products` | Create a product; requires `product:write` |
+| PUT | `/products/{id}` | Update a product; requires `product:write` |
+| POST | `/orders` | Create an order (idempotent, deducts stock) |
+| GET | `/orders/mine?page=&size=` | Current user's orders |
+| GET | `/orders/{id}` | Order detail; owner or `ADMIN` only |
+| POST | `/orders/{id}/cancel` | Cancel an order and restore stock |
+| GET | `/admin/operation-logs?module=&actor=&page=&size=` | Query operation logs; requires `oplog:read` |
 
-### Order Service (gRPC caller)
+The service seeds an administrator (`admin / Admin@123456`) and two demo products on first startup. Enable the example module in the root `pom.xml` before running it:
 
-`examples/order-service` shows how one microservice calls another over gRPC using the `quarkforge-rpc` infrastructure. Before persisting an order it calls user-service's `GetUser` to verify the user exists and is active.
-
-| Capability | Where it lands in the example |
-|------------|-------------------------------|
-| Order CRUD | [OrderResource](examples/order-service/src/main/java/io/github/foundry4j/quarkforge/sample/order/OrderResource.java) + [OrderService](examples/order-service/src/main/java/io/github/foundry4j/quarkforge/sample/order/OrderService.java) |
-| gRPC client | `@GrpcClient("user") UserServiceGrpc.UserServiceBlockingStub` configured via `quarkus.grpc.clients.user.*` |
-| Error propagation | `StatusRuntimeException` from user-service is restored to `BizException` via `RpcErrors.toBizException`, so a 404 from user-service surfaces as `40400` to the HTTP client |
-| Disabled-user guard | Returns `403` when the looked-up user is `DISABLED` |
-
-Run both locally (user-service first so its gRPC server is up):
-
-```bash
-mvn -pl examples/user-service -am install -DskipTests
-mvn -pl examples/order-service -am install -DskipTests
-mvn -pl examples/user-service quarkus:dev          # HTTP 8081, gRPC 9001
-mvn -pl examples/order-service quarkus:dev         # HTTP 8082
+```xml
+<module>examples/mall-service</module>
 ```
 
-Both examples use in-memory H2 and (user-service) demo JWT keys from the repository, so they run out of the box; replace the data source and keys in production.
+```bash
+mvn -pl examples/mall-service -am install -DskipTests
+mvn -pl examples/mall-service quarkus:dev
+```
+
+Tests:
+
+```bash
+mvn -pl examples/mall-service -am test
+```
+
+Swagger UI is available at `http://localhost:8080/q/swagger-ui`; log in as the administrator to exercise the product and operation-log endpoints. The example uses in-memory H2 and demo JWT keys from the repository; replace both in production.
 
 ## Configuration
 

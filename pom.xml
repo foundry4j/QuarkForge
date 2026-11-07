@@ -57,8 +57,7 @@
         <module>quarkforge-notification</module>
         <module>quarkforge-observability</module>
         <module>quarkforge-test</module>
-        <!-- <module>examples/user-service</module> -->
-        <!-- <module>examples/order-service</module> -->
+        <!-- <module>examples/mall-service</module> -->
     </modules>
 
     <properties>
