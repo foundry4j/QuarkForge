@@ -70,12 +70,20 @@ public class AuthContext {
         Object claim = jwt.getClaim(name);
         if (claim instanceof Collection<?> values) {
             Set<String> result = new LinkedHashSet<>();
-            values.forEach(value -> result.add(String.valueOf(value)));
+            values.forEach(value -> result.add(stripQuotes(String.valueOf(value))));
             return Set.copyOf(result);
         }
         if (claim instanceof String single && !single.isBlank()) {
-            return Set.of(single);
+            return Set.of(stripQuotes(single));
         }
         return Set.of();
+    }
+
+    /// SmallRye 对自定义数组 claim 可能返回 `JsonString`，其 `toString()` 带双引号。
+    private static String stripQuotes(String value) {
+        if (value.length() >= 2 && value.startsWith("\"") && value.endsWith("\"")) {
+            return value.substring(1, value.length() - 1);
+        }
+        return value;
     }
 }
