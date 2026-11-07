@@ -1,7 +1,7 @@
 package io.github.foundry4j.quarkforge.web.filter;
 
-import java.util.UUID;
-
+import io.github.foundry4j.quarkforge.core.context.HttpRequestContext;
+import io.quarkus.logging.Log;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.container.ContainerResponseContext;
@@ -9,7 +9,8 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logmanager.MDC;
 import org.jboss.resteasy.reactive.server.ServerRequestFilter;
 import org.jboss.resteasy.reactive.server.ServerResponseFilter;
-import io.quarkus.logging.Log;
+
+import java.util.UUID;
 
 /// ## AccessLogFilter
 /// 请求访问日志：为每个请求生成 `traceId` 写入 MDC 与 `X-Trace-Id` 响应头，
@@ -33,20 +34,26 @@ public class AccessLogFilter {
 
     @ServerRequestFilter
     public void beforeRequest(ContainerRequestContext requestContext) {
+        String traceId = resolveTraceId(requestContext);
+        HttpRequestContext.set(new HttpRequestContext.Info(
+                requestContext.getMethod(),
+                requestContext.getUriInfo().getPath(),
+                clientIp(requestContext),
+                requestContext.getHeaderString("User-Agent"),
+                traceId));
         if (!enabled) {
             return;
         }
-        String traceId = resolveTraceId(requestContext);
         MDC.put(TRACE_ID_MDC_KEY, traceId);
         requestContext.setProperty(START_TIME_PROPERTY, System.nanoTime());
     }
 
     @ServerResponseFilter
     public void afterRequest(ContainerRequestContext requestContext, ContainerResponseContext responseContext) {
-        if (!enabled) {
-            return;
-        }
         try {
+            if (!enabled) {
+                return;
+            }
             Object start = requestContext.getProperty(START_TIME_PROPERTY);
             long costMillis = start instanceof Long startNanos
                     ? (System.nanoTime() - startNanos) / 1_000_000
@@ -59,6 +66,7 @@ public class AccessLogFilter {
                     requestContext.getUriInfo().getPath(), responseContext.getStatus(), costMillis);
         } finally {
             MDC.remove(TRACE_ID_MDC_KEY);
+            HttpRequestContext.clear();
         }
     }
 
@@ -69,5 +77,16 @@ public class AccessLogFilter {
             return upstream;
         }
         return UUID.randomUUID().toString().replace("-", "").substring(0, 16);
+    }
+
+    /// 客户端 IP：优先 `X-Forwarded-For` 的第一个地址，其次 `X-Real-IP`。
+    private String clientIp(ContainerRequestContext requestContext) {
+        String forwarded = requestContext.getHeaderString("X-Forwarded-For");
+        if (forwarded != null && !forwarded.isBlank()) {
+            int comma = forwarded.indexOf(',');
+            return (comma > 0 ? forwarded.substring(0, comma) : forwarded).trim();
+        }
+        String realIp = requestContext.getHeaderString("X-Real-IP");
+        return realIp == null || realIp.isBlank() ? null : realIp.trim();
     }
 }

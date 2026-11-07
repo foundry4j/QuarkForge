@@ -20,7 +20,7 @@ A modular rapid microservice development framework based on Quarkus, with built-
 | `quarkforge-web` | Web layer | Global exception mapping, automatic response wrapping, `@RawResponse` exemption, access log with traceId, `PageQuery` pagination parameters, file upload/download, API versioning |
 | `quarkforge-validation` | Parameter validation | Business-oriented Bean Validation annotations: `@Phone`, `@IdCard`, `@BankCard`, `@PasswordStrength`, `@EnumValid` |
 | `quarkforge-data` | Data access | `BaseEntity` (snowflake ID + audit timestamps), `BaseRepository` (pagination straight to `PageResult`), `TenantEntity` multi-tenant auto-filtering, `SoftDeleteEntity`/`SoftDeleteRepository` soft delete with recycle bin, `AuditSupport` audit SPI |
-| `quarkforge-audit` | Audit logging | Automatically records create/update/delete operations with field-level diffs on updates (e.g. price 100 → 120), `AuditLog` persistence, operator resolution |
+| `quarkforge-audit` | Audit logging | Automatically records create/update/delete operations with field-level diffs on updates (e.g. price 100 → 120), `AuditLog` persistence, operator resolution, `@OperationLog` method-level operation logs |
 | `quarkforge-crypto` | Encryption & masking | AES-256-GCM `CryptoService`, `EncryptedStringConverter` field encryption, `@Sensitive` response masking (`138****0000`) |
 | `quarkforge-cache` | Local cache | `CacheService` SPI, Caffeine default implementation, `@Cacheable`/`@CacheEvict` annotations, built-in Bloom-filter penetration guard and single-flight breakdown guard |
 | `quarkforge-dict` | Dictionary & metadata | Multi-tenant dict types/items, cached lookups, value→label translation, hierarchical dictionaries via `parentValue` |
@@ -247,6 +247,26 @@ List<AuditLog> logs = auditLogRepository.findByEntity(Order.class.getName(), ord
 - The operator is resolved from `ActorContext` first, then the current `SecurityIdentity`, and finally `system`
 - Audit records are persisted in the same transaction as business data; both roll back together
 - `@NotAudited` skips specified entities; JPQL / native bulk updates do not trigger lifecycle callbacks and are therefore not audited
+
+#### Operation Log
+
+Annotate REST resource or service methods with `@OperationLog` to persist one record per invocation. Failure records are written in an independent transaction, so they survive business rollback:
+
+```java
+@POST
+@OperationLog(module = "order", action = "create", description = "创建订单")
+public Order createOrder(@Valid CreateOrderRequest req) { ... }
+
+@Inject OperationLogRepository operationLogRepository;
+
+PageResult<OperationLogEntry> page = operationLogRepository.pageByActor("alice", 1, 20);
+PageResult<OperationLogEntry> failures = operationLogRepository.pageFailures(1, 20);
+```
+
+Each record contains the operator, method, arguments (JSON), success flag, error message, duration, traceId, and—when `quarkforge-web` is present—request method, path, client IP (`X-Forwarded-For` / `X-Real-IP`) and User-Agent.
+
+- `recordArgs = false` skips argument persistence for sensitive payloads
+- `quarkforge.audit.operation-log.enabled` toggles operation logging
 
 ### Field Encryption & Masking (crypto)
 
@@ -783,6 +803,7 @@ Both examples use in-memory H2 and (user-service) demo JWT keys from the reposit
 | `quarkforge.data.worker-id` | `0` | Snowflake ID node number ([0, 1023]) |
 | `quarkforge.data.tenant.default` | `default` | Tenant ID used when none is set explicitly |
 | `quarkforge.audit.enabled` | `true` | Audit log persistence switch |
+| `quarkforge.audit.operation-log.enabled` | `true` | Operation log persistence switch |
 | `quarkforge.crypto.key` | none (required) | Field encryption key, Base64 of 32 bytes |
 | `quarkforge.cache.local.max-size` | `10000` | Maximum number of local cache entries |
 | `quarkforge.cache.local.default-ttl` | `PT5M` | Default local cache TTL |
