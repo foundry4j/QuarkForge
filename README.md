@@ -445,7 +445,7 @@ Stores enum-like reference data (gender, order status, units, …) so business t
 @Inject DictService dict;
 
 List<DictItemView> statuses = dict.items("order_status");        // enabled items, ordered by sort
-String label = dict.label("gender", "M");                        // "男", also works for disabled items
+String label = dict.label("gender", "M");                        // "Man", also works for disabled items
 Map<String, String> mapping = dict.translate("order_status");    // value → label
 ```
 
