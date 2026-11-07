@@ -254,7 +254,7 @@ Annotate REST resource or service methods with `@OperationLog` to persist one re
 
 ```java
 @POST
-@OperationLog(module = "order", action = "create", description = "创建订单")
+@OperationLog(module = "order", action = "create", description = "create order")
 public Order createOrder(@Valid CreateOrderRequest req) { ... }
 
 @Inject OperationLogRepository operationLogRepository;
