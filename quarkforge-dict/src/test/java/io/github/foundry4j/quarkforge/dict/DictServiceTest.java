@@ -1,5 +1,6 @@
 package io.github.foundry4j.quarkforge.dict;
 
+import io.github.foundry4j.quarkforge.cache.LocalCacheService;
 import io.github.foundry4j.quarkforge.core.api.PageResult;
 import io.github.foundry4j.quarkforge.core.exception.BizException;
 import io.github.foundry4j.quarkforge.data.TenantContext;
@@ -11,16 +12,19 @@ import io.github.foundry4j.quarkforge.dict.entity.DictItemRepository;
 import io.github.foundry4j.quarkforge.dict.entity.DictType;
 import io.github.foundry4j.quarkforge.dict.entity.DictTypeRepository;
 import io.github.foundry4j.quarkforge.dict.service.DictService;
+import io.github.foundry4j.quarkforge.dict.service.DictWarmup;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -37,6 +41,12 @@ class DictServiceTest {
 
     @Inject
     DictItemRepository itemRepository;
+
+    @Inject
+    DictWarmup dictWarmup;
+
+    @Inject
+    LocalCacheService cache;
 
     @BeforeEach
     @Transactional
@@ -131,6 +141,27 @@ class DictServiceTest {
         // 经由服务更新：缓存被清除，读到新值
         service.updateItem(item.id, new DictItemRequest("新名称", "A", 0, null, null, null));
         assertEquals("新名称", service.items("cached").getFirst().label());
+    }
+
+    @Test
+    @Transactional
+    void warmupLoadsBothViewsIntoCache() {
+        service.createType(type("warm_status", "预热状态"));
+        service.createItem("warm_status", item("ON", "启用", 0, null));
+        service.createItem("warm_status", item("OFF", "停用", 1, null, false));
+
+        dictWarmup.warmup();
+
+        DictItemView[] enabled = cache.get("qf:dict:default:warm_status:enabled",
+                DictItemView[].class, Duration.ofMinutes(10));
+        assertNotNull(enabled);
+        assertEquals(1, enabled.length);
+
+        DictItemView[] all = cache.get("qf:dict:default:warm_status:all",
+                DictItemView[].class, Duration.ofMinutes(10));
+        assertNotNull(all);
+        assertEquals(2, all.length);
+        assertEquals("停用", all[1].label());
     }
 
     // ---------- 删除 / 搜索 / 多租户 ----------

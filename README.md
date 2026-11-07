@@ -22,7 +22,7 @@ A modular rapid microservice development framework based on Quarkus, with built-
 | `quarkforge-data` | Data access | `BaseEntity` (snowflake ID + audit timestamps), `BaseRepository` (pagination straight to `PageResult`), `TenantEntity` multi-tenant auto-filtering, `SoftDeleteEntity`/`SoftDeleteRepository` soft delete with recycle bin, `AuditSupport` audit SPI |
 | `quarkforge-audit` | Audit logging | Automatically records create/update/delete operations with field-level diffs on updates (e.g. price 100 → 120), `AuditLog` persistence, operator resolution, `@OperationLog` method-level operation logs |
 | `quarkforge-crypto` | Encryption & masking | AES-256-GCM `CryptoService`, `EncryptedStringConverter` field encryption, `@Sensitive` response masking (`138****0000`) |
-| `quarkforge-cache` | Local cache | `CacheService` SPI, Caffeine default implementation, `@Cacheable`/`@CacheEvict` annotations, built-in Bloom-filter penetration guard and single-flight breakdown guard |
+| `quarkforge-cache` | Local cache | `CacheService` SPI, Caffeine default implementation, `@Cacheable`/`@CacheEvict` annotations, `@CacheWarmup` startup preloading, built-in Bloom-filter penetration guard and single-flight breakdown guard |
 | `quarkforge-dict` | Dictionary & metadata | Multi-tenant dict types/items, cached lookups, value→label translation, hierarchical dictionaries via `parentValue` |
 | `quarkforge-excel` | Excel / CSV import & export | Streaming xlsx/CSV reading, row-level validation with error rows, SXSSF streaming export, REST upload/download helpers |
 | `quarkforge-migration` | Database migration | Flyway starter that automatically runs versioned scripts under `db/migration` at application startup |
@@ -404,6 +404,39 @@ After adding `quarkforge-redis`, the default bean switches to `RedisTwoLevelCach
 
 The interceptor degrades gracefully when the active `CacheService` is not a `LocalCacheService` — it still caches through `getOrLoad`, but bloom + single-flight are skipped.
 
+#### Cache warm-up
+
+Annotate a no-arg method with `@CacheWarmup` and the framework invokes it after the application has started (`StartupEvent`), so hot keys are already populated before the first request arrives:
+
+```java
+@Unremovable      // production builds remove beans that are never injected
+@ApplicationScoped
+public class ProductWarmup {
+
+    @Inject ProductService products;
+
+    @CacheWarmup(name = "hot-products", order = 100)
+    public void warm() {
+        products.hotIds().forEach(products::requireById);   // fills @Cacheable entries
+    }
+}
+```
+
+| Attribute | Default | Purpose |
+|-----------|---------|---------|
+| `name` | `Class#method` | Task name used in logs |
+| `order` | `0` | Smaller runs first |
+| `enabled` | `true` | Skip an individual task |
+
+```properties
+quarkforge.cache.warmup.enabled=true      # global switch
+quarkforge.cache.warmup.fail-fast=false   # true aborts startup when a task fails
+```
+
+Warm-up methods must be no-arg and their return values are ignored. Calls go through the CDI proxy, so `@Cacheable` / `@Transactional` interceptors apply. A failing task is logged and the remaining tasks still run unless `fail-fast` is enabled.
+
+Because a warm-up bean is only referenced by the annotation, mark it `@Unremovable` so Quarkus keeps it in production builds (dev mode and tests never remove beans).
+
 ### Dictionary & Metadata (dict)
 
 Stores enum-like reference data (gender, order status, units, …) so business tables keep only a short value while the UI renders a localized label. Every dictionary is tenant-scoped, cached, and read through the `CacheService` SPI.
@@ -436,6 +469,7 @@ Notes:
 - Reads are cached per tenant; any write through `DictService` evicts both the enabled-only and the full view, so callers never see stale labels.
 - `parentValue` supports hierarchical dictionaries (province → city, category → subcategory).
 - Cache TTL: `quarkforge.dict.cache-ttl=PT10M` (default 10 minutes).
+- Enabled dictionary types are preloaded at startup via `@CacheWarmup`; set `quarkforge.dict.warmup.enabled=false` to disable. Only the current tenant is preloaded — other tenants load on first access.
 
 ### Excel / CSV Import & Export (excel)
 
