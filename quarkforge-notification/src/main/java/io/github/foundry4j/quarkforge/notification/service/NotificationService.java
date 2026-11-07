@@ -3,19 +3,22 @@ package io.github.foundry4j.quarkforge.notification.service;
 import io.github.foundry4j.quarkforge.core.api.CommonErrorCode;
 import io.github.foundry4j.quarkforge.core.api.PageResult;
 import io.github.foundry4j.quarkforge.core.exception.BizException;
+import io.github.foundry4j.quarkforge.notification.channel.NotificationChannel;
 import io.github.foundry4j.quarkforge.notification.entity.Notification;
 import io.github.foundry4j.quarkforge.notification.entity.NotificationRepository;
 import io.github.foundry4j.quarkforge.notification.entity.NotificationType;
-import io.github.foundry4j.quarkforge.notification.websocket.NotificationWebSocket.SessionManager;
+import io.quarkus.logging.Log;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 
 /// ## NotificationService
 /// 通知服务核心实现：
 ///
-/// - 持久化通知 + 尝试实时推送（WebSocket 在线 → 立即送达并标记 `deliveredAt`；
-///   离线 → 仅持久化，等用户重连时由 [SessionManager] 补偿）
+/// - 持久化通知后，依次分发给容器中所有 [NotificationChannel] 通道
+///   （WebSocket 站内推送始终启用，邮件 / 短信通道按配置启用，业务方可自定义通道）；
+///   单个通道失败只记警告，不影响其他通道与主流程
 /// - 查询 / 已读 / 删除全部走仓储
 ///
 /// 实现了 [NotificationSender] SPI，业务模块可直接 `@Inject` 本接口发送通知。
@@ -25,8 +28,9 @@ public class NotificationService implements NotificationSender {
     @Inject
     NotificationRepository repository;
 
+    // Instance 注入点让 Arc 保留所有通道实现（否则反射式遍历到的 Bean 会被构建期移除）
     @Inject
-    SessionManager sessionManager;
+    Instance<NotificationChannel> channels;
 
     // ---------- SPI 实现 ----------
 
@@ -50,9 +54,12 @@ public class NotificationService implements NotificationSender {
         notification.link = link;
         repository.persist(notification);
 
-        // 同步推送：在线 → 送达并标记 delivered；离线 → 等重连补偿
-        if (sessionManager.pushTo(recipientId, serialize(notification))) {
-            repository.markDelivered(notification.id);
+        for (NotificationChannel channel : channels) {
+            try {
+                channel.deliver(notification);
+            } catch (Exception e) {
+                Log.warnf(e, "通知通道 %s 投递失败（通知 %d）", channel.name(), notification.id);
+            }
         }
     }
 
@@ -92,26 +99,5 @@ public class NotificationService implements NotificationSender {
             throw new BizException(CommonErrorCode.FORBIDDEN, "not your notification");
         }
         repository.delete(n);
-    }
-
-    // ---------- 私有 ----------
-
-    private static String serialize(Notification n) {
-        StringBuilder sb = new StringBuilder(192);
-        sb.append("{");
-        sb.append("\"id\":").append(n.id).append(',');
-        sb.append("\"type\":\"").append(n.type).append("\",");
-        sb.append("\"title\":\"").append(escape(n.title)).append("\"");
-        if (n.content != null) sb.append(",\"content\":\"").append(escape(n.content)).append("\"");
-        if (n.link != null) sb.append(",\"link\":\"").append(escape(n.link)).append("\"");
-        if (n.actorId != null) sb.append(",\"actorId\":\"").append(escape(n.actorId)).append("\"");
-        sb.append(",\"createdAt\":\"").append(n.createdAt).append("\"");
-        sb.append("}");
-        return sb.toString();
-    }
-
-    private static String escape(String s) {
-        if (s == null) return "";
-        return s.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n").replace("\r", "\\r");
     }
 }

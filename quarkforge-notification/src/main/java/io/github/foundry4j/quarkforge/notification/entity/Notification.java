@@ -1,7 +1,5 @@
 package io.github.foundry4j.quarkforge.notification.entity;
 
-import java.time.Instant;
-
 import io.github.foundry4j.quarkforge.data.TenantEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -9,6 +7,8 @@ import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.Index;
 import jakarta.persistence.Table;
+
+import java.time.Instant;
 
 /// ## Notification
 /// 通知实体，继承 [TenantEntity] 天然获得多租户隔离。
